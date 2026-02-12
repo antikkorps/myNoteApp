@@ -36,4 +36,4 @@
 
 ### light dark mode
 
-- [ ] composent toggle
+- [x] Toggle light/dark mode (UColorModeButton dans le header)

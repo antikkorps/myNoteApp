@@ -4,7 +4,6 @@
   >
     <div class="flex items-center gap-2">
       <UButton
-        class="md:hidden"
         size="sm"
         variant="ghost"
         icon="i-lucide-menu"
@@ -16,7 +15,8 @@
       <span class="text-sm text-gray-500 hidden sm:inline">{{
         session?.data?.user?.email
       }}</span>
-      <UButton size="sm" variant="ghost" @click="handleSignOut">Sign out</UButton>
+      <UColorModeButton size="sm" variant="ghost" />
+      <UButton size="sm" variant="ghost" icon="i-lucide-power" @click="handleSignOut" />
     </div>
   </header>
 </template>
