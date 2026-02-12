@@ -1,0 +1,27 @@
+{
+  "name": "note-app",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
+  },
+  "devDependencies": {
+    "dotenv": "^17.2.4",
+    "drizzle-kit": "^0.31.9",
+    "nuxt": "^4.3.1",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^4.4.0",
+    "drizzle-orm": "^0.45.1",
+    "postgres": "^3.4.8",
+    "tailwindcss": "^4.1.18"
+  }
+}
