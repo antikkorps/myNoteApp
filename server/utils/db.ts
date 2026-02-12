@@ -1,2 +1,2 @@
-export { db } from '../database/index'
-export { notes } from '../database/schema'
+export { db } from "../database/index"
+export { accounts, notes, sessions, users, verification } from "../database/schema"
