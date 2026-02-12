@@ -1,12 +1,12 @@
 <template>
-  <div>
+  <div class="h-screen flex flex-col">
     <AppHeader />
-    <slot />
-    <AppFooter />
+    <main class="flex-1 overflow-hidden">
+      <slot />
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import AppFooter from "../components/AppFooter.vue"
 import AppHeader from "../components/AppHeader.vue"
 </script>

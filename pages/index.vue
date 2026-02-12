@@ -1,37 +1,79 @@
 <template>
-  <div>
-    <div class="w-full flex justify-end">
-      <UButton @click="Open = true" class="m-4">Create Notes</UButton>
-    </div>
-    <UModal v-model:open="Open">
-      <template #title> Create a new note </template>
-      <template #content>
-        <NoteForm @noteCreated="onNoteCreated" />
-      </template>
-    </UModal>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-3">
-      <NoteCard v-for="note in notes.data" :key="note.id" :note="note" />
-    </div>
-    <p>Endpoints API disponibles :</p>
-    <ul>
-      <li>GET /api/notes - Liste toutes les notes</li>
-      <li>POST /api/notes - Crée une note</li>
-      <li>PUT /api/notes/:id - Met à jour une note</li>
-      <li>DELETE /api/notes/:id - Supprime une note</li>
-    </ul>
+  <div class="flex h-full">
+    <NoteSidebar
+      :notes="noteList"
+      :active-note-id="activeNoteId"
+      @create="createNote"
+      @select="selectNote"
+    />
+    <NoteEditor :note="activeNote" @save="saveNote" @delete="deleteNote" />
   </div>
 </template>
 
-<script setup>
-const Open = ref(false)
-const { data: notes, refresh } = await useFetch("/api/notes")
+<script setup lang="ts">
+interface Note {
+  id: number
+  title: string
+  content: string
+  tags: string
+  createdAt: string
+  updatedAt: string
+}
 
-const fetchNotes = async () => {
+const { data: notesResponse, refresh } = await useFetch("/api/notes")
+const noteList = computed(() => notesResponse.value?.data ?? [])
+
+const activeNoteId = ref<number | null>(null)
+const activeNote = ref<Note | null>(null)
+
+async function selectNote(id: number) {
+  activeNoteId.value = id
+  const found = noteList.value.find((n: Note) => n.id === id)
+  if (found) {
+    activeNote.value = { ...found }
+  }
+}
+
+async function createNote() {
+  const response = await $fetch("/api/notes", {
+    method: "POST",
+    body: { title: "", content: "" },
+  })
+  if (response.data) {
+    await refresh()
+    selectNote(response.data.id)
+  }
+}
+
+async function saveNote(payload: { id: number; title: string; content: string }) {
+  await $fetch(`/api/notes/${payload.id}`, {
+    method: "PUT",
+    body: {
+      title: payload.title || "Untitled",
+      content: payload.content,
+      tags: "",
+    },
+  })
   await refresh()
 }
 
-const onNoteCreated = () => {
-  refresh()
-  Open.value = false
+async function deleteNote(id: number) {
+  await $fetch(`/api/notes/${id}`, { method: "DELETE" })
+  if (activeNoteId.value === id) {
+    activeNoteId.value = null
+    activeNote.value = null
+  }
+  await refresh()
 }
+
+// Auto-sélectionner la première note au chargement
+watch(
+  noteList,
+  (list) => {
+    if (list.length > 0 && !activeNoteId.value) {
+      selectNote(list[0].id)
+    }
+  },
+  { immediate: true },
+)
 </script>
