@@ -9,4 +9,7 @@
 
 <script setup lang="ts">
 import AppHeader from "../components/AppHeader.vue"
+
+const sidebarOpen = ref(true)
+provide("sidebarOpen", sidebarOpen)
 </script>
