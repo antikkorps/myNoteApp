@@ -13,6 +13,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "devDependencies": {
+    "@iconify-json/lucide": "^1.2.90",
     "@types/node": "^25.2.3",
     "dotenv": "^17.2.4",
     "drizzle-kit": "^0.31.9",
