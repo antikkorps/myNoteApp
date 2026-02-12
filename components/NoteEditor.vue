@@ -42,9 +42,7 @@
       <span v-if="saving">Saving...</span>
       <span v-else-if="lastSaved">Saved</span>
       <span v-else />
-      <UButton size="xs" variant="ghost" color="error" @click="$emit('delete', note.id)">
-        Delete
-      </UButton>
+      <UButton size="xs" variant="ghost" color="error" icon="i-lucide-trash-2" @click="$emit('delete', note.id)" />
     </div>
   </div>
 

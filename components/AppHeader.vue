@@ -16,6 +16,7 @@
       <span class="text-sm text-gray-500 hidden sm:inline">{{
         session?.data?.user?.email
       }}</span>
+      <UColorModeButton size="sm" variant="ghost" />
       <UButton size="sm" variant="ghost" @click="handleSignOut">Sign out</UButton>
     </div>
   </header>
