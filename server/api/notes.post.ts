@@ -1,17 +1,16 @@
 import { db, notes } from '../utils/db'
+import { requireAuth } from '../utils/requireAuth'
 
 export default defineEventHandler(async (event) => {
   try {
+    const session = await requireAuth(event)
     const body = await readBody(event)
     const { title, content, tags } = body
 
-    if (!title || !content) {
-      throw new Error('Title and content are required')
-    }
-
     const [note] = await db.insert(notes).values({
-      title,
-      content,
+      userId: session.user.id,
+      title: title || 'Untitled Note',
+      content: content || '',
       tags: tags || '',
     }).returning()
 

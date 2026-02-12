@@ -1,25 +1,27 @@
-import { eq } from 'drizzle-orm'
-import { db, notes } from '../../utils/db'
+import { and, eq } from "drizzle-orm"
+import { db, notes } from "../../utils/db"
+import { requireAuth } from "../../utils/requireAuth"
 
 export default defineEventHandler(async (event) => {
   try {
-    const id = Number(getRouterParam(event, 'id'))
+    const session = await requireAuth(event)
+    const id = Number(getRouterParam(event, "id"))
     const body = await readBody(event)
     const { title, content, tags } = body
 
-    if (!title || !content) {
-      throw new Error('Title and content are required')
-    }
-
-    const [note] = await db.update(notes).set({
-      title,
-      content,
-      tags: tags || '',
-      updatedAt: new Date(),
-    }).where(eq(notes.id, id)).returning()
+    const [note] = await db
+      .update(notes)
+      .set({
+        title,
+        content,
+        tags: tags || "",
+        updatedAt: new Date(),
+      })
+      .where(and(eq(notes.id, id), eq(notes.userId, session.user.id)))
+      .returning()
 
     if (!note) {
-      throw new Error('Note not found')
+      throw createError({ statusCode: 404, statusMessage: "Note not found" })
     }
 
     return { success: true, data: note }
