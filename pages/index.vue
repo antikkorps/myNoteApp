@@ -1,48 +1,57 @@
 <template>
   <div class="flex h-full">
     <NoteSidebar
+      v-show="sidebarOpen"
       :notes="noteList"
       :active-note-id="activeNoteId"
       @create="createNote"
       @select="selectNote"
     />
-    <NoteEditor :note="activeNote" @save="saveNote" @delete="deleteNote" />
+    <ClientOnly>
+      <NoteEditor :note="activeNote" @save="saveNote" @delete="deleteNote" />
+    </ClientOnly>
   </div>
 </template>
 
 <script setup lang="ts">
+const sidebarOpen = ref(true)
+provide("sidebarOpen", sidebarOpen)
+
 interface Note {
   id: number
   title: string
   content: string
-  tags: string
+  tags: string | null
+  userId: string
   createdAt: string
   updatedAt: string
 }
 
-const { data: notesResponse, refresh } = await useFetch("/api/notes")
-const noteList = computed(() => notesResponse.value?.data ?? [])
+const { data: noteList, refresh } = await useFetch("/api/notes", {
+  default: () => [] as Note[],
+})
 
 const activeNoteId = ref<number | null>(null)
 const activeNote = ref<Note | null>(null)
 
 async function selectNote(id: number) {
   activeNoteId.value = id
-  const found = noteList.value.find((n: Note) => n.id === id)
+  if (import.meta.client && window.innerWidth < 768) {
+    sidebarOpen.value = false
+  }
+  const found = noteList.value.find((n) => n.id === id)
   if (found) {
     activeNote.value = { ...found }
   }
 }
 
 async function createNote() {
-  const response = await $fetch("/api/notes", {
+  const note = await $fetch("/api/notes", {
     method: "POST",
     body: { title: "", content: "" },
   })
-  if (response.data) {
-    await refresh()
-    selectNote(response.data.id)
-  }
+  await refresh()
+  if (note) selectNote(note.id)
 }
 
 async function saveNote(payload: { id: number; title: string; content: string }) {
@@ -70,8 +79,8 @@ async function deleteNote(id: number) {
 watch(
   noteList,
   (list) => {
-    if (list.length > 0 && !activeNoteId.value) {
-      selectNote(list[0].id)
+    if (list && list.length > 0 && !activeNoteId.value) {
+      selectNote(list[0]!.id)
     }
   },
   { immediate: true },

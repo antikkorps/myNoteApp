@@ -3,21 +3,17 @@ import { db, notes } from "../../utils/db"
 import { requireAuth } from "../../utils/requireAuth"
 
 export default defineEventHandler(async (event) => {
-  try {
-    const session = await requireAuth(event)
-    const id = Number(getRouterParam(event, "id"))
+  const session = await requireAuth(event)
+  const id = Number(getRouterParam(event, "id"))
 
-    const [note] = await db
-      .delete(notes)
-      .where(and(eq(notes.id, id), eq(notes.userId, session.user.id)))
-      .returning()
+  const [note] = await db
+    .delete(notes)
+    .where(and(eq(notes.id, id), eq(notes.userId, session.user.id)))
+    .returning()
 
-    if (!note) {
-      throw createError({ statusCode: 404, statusMessage: "Note not found" })
-    }
-
-    return { success: true }
-  } catch (error) {
-    return { success: false, error: (error as Error).message }
+  if (!note) {
+    throw createError({ statusCode: 404, statusMessage: "Note not found" })
   }
+
+  return { deleted: true }
 })

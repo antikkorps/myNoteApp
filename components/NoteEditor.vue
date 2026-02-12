@@ -1,7 +1,7 @@
 <template>
   <div v-if="note" class="flex-1 flex flex-col h-full overflow-hidden">
     <!-- Title -->
-    <div class="px-12 pt-8 pb-2">
+    <div class="px-4 md:px-12 pt-8 pb-2">
       <input
         v-model="localTitle"
         placeholder="Untitled"
@@ -11,22 +11,33 @@
     </div>
 
     <!-- Editor -->
-    <div class="flex-1 overflow-y-auto px-12 pb-8">
-      <UEditor
-        v-slot="{ editor }"
-        v-model="localContent"
-        content-type="markdown"
-        class="min-h-50 flex flex-col gap-2"
-        @update:model-value="scheduleSave"
-      >
-        <UEditorToolbar :editor="editor" :items="items" layout="bubble" />
-        <UEditorDragHandle :editor="editor" />
-      </UEditor>
+    <div class="flex-1 overflow-y-auto px-4 md:px-12 pb-8">
+      <ClientOnly>
+        <UEditor
+          v-slot="{ editor }"
+          v-model="localContent"
+          content-type="markdown"
+          class="min-h-50 flex flex-col gap-2"
+          @update:model-value="scheduleSave"
+        >
+          <!-- Toolbar fixe : blocs + historique -->
+          <UEditorToolbar
+            :editor="editor"
+            :items="fixedItems"
+            layout="fixed"
+            class="overflow-x-auto scrollbar-hide"
+          />
+
+          <!-- Toolbar bubble : formatage texte -->
+          <UEditorToolbar :editor="editor" :items="bubbleItems" layout="bubble" />
+          <UEditorDragHandle :editor="editor" />
+        </UEditor>
+      </ClientOnly>
     </div>
 
     <!-- Bottom bar -->
     <div
-      class="flex items-center justify-between px-12 py-2 border-t border-gray-200 dark:border-gray-800 text-xs text-gray-400"
+      class="flex items-center justify-between px-4 md:px-12 py-2 border-t border-gray-200 dark:border-gray-800 text-xs text-gray-400"
     >
       <span v-if="saving">Saving...</span>
       <span v-else-if="lastSaved">Saved</span>
@@ -44,11 +55,14 @@
 </template>
 
 <script setup lang="ts">
+import type { EditorToolbarItem } from "@nuxt/ui"
+
 interface Note {
   id: number
   title: string
   content: string
-  tags: string
+  tags: string | null
+  userId: string
   createdAt: string
   updatedAt: string
 }
@@ -67,7 +81,7 @@ const localContent = ref("")
 const saving = ref(false)
 const lastSaved = ref(false)
 
-const items: EditorToolbarItem[][] = [
+const fixedItems: EditorToolbarItem[][] = [
   // History controls
   [
     {
@@ -230,16 +244,31 @@ const items: EditorToolbarItem[][] = [
   ],
 ]
 
-const suggestionItems: EditorSuggestionMenuItem[][] = [
+// Toolbar bubble : formatage inline (apparaît à la sélection)
+const bubbleItems: EditorToolbarItem[][] = [
   [
-    { kind: "heading", level: 1, label: "Heading 1", icon: "i-lucide-heading-1" },
-    { kind: "heading", level: 2, label: "Heading 2", icon: "i-lucide-heading-2" },
-    { kind: "heading", level: 3, label: "Heading 3", icon: "i-lucide-heading-3" },
-    { kind: "bulletList", label: "Bullet List", icon: "i-lucide-list" },
-    { kind: "orderedList", label: "Ordered List", icon: "i-lucide-list-ordered" },
-    { kind: "blockquote", label: "Blockquote", icon: "i-lucide-text-quote" },
-    { kind: "codeBlock", label: "Code Block", icon: "i-lucide-square-code" },
+    { kind: "mark", mark: "bold", icon: "i-lucide-bold", tooltip: { text: "Bold" } },
+    {
+      kind: "mark",
+      mark: "italic",
+      icon: "i-lucide-italic",
+      tooltip: { text: "Italic" },
+    },
+    {
+      kind: "mark",
+      mark: "underline",
+      icon: "i-lucide-underline",
+      tooltip: { text: "Underline" },
+    },
+    {
+      kind: "mark",
+      mark: "strike",
+      icon: "i-lucide-strikethrough",
+      tooltip: { text: "Strike" },
+    },
+    { kind: "mark", mark: "code", icon: "i-lucide-code", tooltip: { text: "Code" } },
   ],
+  [{ kind: "link", icon: "i-lucide-link", tooltip: { text: "Link" } }],
 ]
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null

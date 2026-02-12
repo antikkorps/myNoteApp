@@ -1,6 +1,6 @@
 <template>
   <aside
-    class="w-64 border-r border-gray-200 dark:border-gray-800 h-full flex flex-col bg-gray-50 dark:bg-gray-950"
+    class="w-64 border-r border-gray-200 dark:border-gray-800 h-full flex flex-col bg-gray-50 dark:bg-gray-950 max-md:absolute max-md:z-10 max-md:w-full max-md:border-r-0"
   >
     <div class="p-3">
       <UButton block @click="$emit('create')"> New Note </UButton>
