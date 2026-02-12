@@ -1,4 +1,4 @@
-# Note App - Projet de pratique
+# myNoteApp - Projet perso
 
 Stack : Nuxt 3 + dockerise Postgres
 
