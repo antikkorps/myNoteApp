@@ -10,6 +10,9 @@
       />
     </div>
 
+    <!-- Tags -->
+    <TagInput v-model="localTags" @update:model-value="scheduleSave" />
+
     <!-- Editor -->
     <div class="flex-1 overflow-y-auto px-4 md:px-12 pb-8">
       <ClientOnly>
@@ -70,12 +73,13 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  save: [data: { id: number; title: string; content: string }]
+  save: [data: { id: number; title: string; content: string; tags: string }]
   delete: [id: number]
 }>()
 
 const localTitle = ref("")
 const localContent = ref("")
+const localTags = ref<string[]>([])
 const saving = ref(false)
 const lastSaved = ref(false)
 
@@ -280,6 +284,7 @@ watch(
       isLoadingNote = true
       localTitle.value = props.note.title
       localContent.value = props.note.content
+      localTags.value = parseTags(props.note.tags)
       lastSaved.value = false
       nextTick(() => {
         isLoadingNote = false
@@ -303,6 +308,7 @@ function scheduleSave() {
         id: props.note.id,
         title: localTitle.value,
         content: localContent.value,
+        tags: serializeTags(localTags.value),
       })
       lastSaved.value = true
       saving.value = false

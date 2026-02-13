@@ -16,9 +16,9 @@
 
 ### Tags
 
-- [ ] Interface d'ajout/suppression de tags sur une note
-- [ ] Nuage de tags dans la sidebar
-- [ ] Filtrer les notes par tag
+- [x] Interface d'ajout/suppression de tags sur une note
+- [x] Nuage de tags dans la sidebar
+- [x] Filtrer les notes par tag
 
 ### Dossiers
 

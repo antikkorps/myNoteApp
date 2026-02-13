@@ -10,10 +10,13 @@
     >
       <NoteSidebar
         v-show="sidebarOpen"
-        :notes="noteList"
+        :notes="filteredNotes"
+        :all-notes="noteList"
         :active-note-id="activeNoteId"
+        :active-tag="activeTag"
         @create="createNote"
         @select="selectNote"
+        @filter-tag="handleFilterTag"
       />
     </Transition>
     <ClientOnly>
@@ -43,6 +46,23 @@ const { data: noteList, refresh } = await useFetch("/api/notes", {
 
 const activeNoteId = ref<number | null>(null)
 const activeNote = ref<Note | null>(null)
+const activeTag = ref<string | null>(null)
+
+const filteredNotes = computed(() => {
+  if (!activeTag.value) return noteList.value
+  return noteList.value.filter((note) =>
+    parseTags(note.tags).includes(activeTag.value!),
+  )
+})
+
+function handleFilterTag(tag: string | null) {
+  activeTag.value = tag
+  // Deselect active note if it doesn't match the new filter
+  if (tag && activeNote.value && !parseTags(activeNote.value.tags).includes(tag)) {
+    activeNoteId.value = null
+    activeNote.value = null
+  }
+}
 
 async function selectNote(id: number) {
   activeNoteId.value = id
@@ -56,6 +76,7 @@ async function selectNote(id: number) {
 }
 
 async function createNote() {
+  activeTag.value = null
   const note = await $fetch("/api/notes", {
     method: "POST",
     body: { title: "", content: "" },
@@ -64,13 +85,13 @@ async function createNote() {
   if (note) selectNote(note.id)
 }
 
-async function saveNote(payload: { id: number; title: string; content: string }) {
+async function saveNote(payload: { id: number; title: string; content: string; tags: string }) {
   await $fetch(`/api/notes/${payload.id}`, {
     method: "PUT",
     body: {
       title: payload.title || "Untitled",
       content: payload.content,
-      tags: "",
+      tags: payload.tags,
     },
   })
   await refresh()
@@ -120,11 +141,19 @@ async function deleteNote(id: number) {
   })
 }
 
-// Auto-sélectionner la première note au chargement
+// Auto-select first note or deselect if active note disappears from filtered list
 watch(
-  noteList,
+  filteredNotes,
   (list) => {
-    if (list && list.length > 0 && !activeNoteId.value) {
+    if (activeNoteId.value && !list.find((n) => n.id === activeNoteId.value)) {
+      // Active note no longer in filtered list
+      if (list.length > 0) {
+        selectNote(list[0]!.id)
+      } else {
+        activeNoteId.value = null
+        activeNote.value = null
+      }
+    } else if (list.length > 0 && !activeNoteId.value) {
       selectNote(list[0]!.id)
     }
   },
