@@ -1,4 +1,4 @@
-import { boolean, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core"
+import { boolean, integer, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core"
 
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
@@ -54,6 +54,17 @@ export const verification = pgTable("verification", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 })
 
+export const folders = pgTable("folders", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  parentId: integer("parent_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+})
+
 export const notes = pgTable("notes", {
   id: serial("id").primaryKey(),
   userId: text("user_id")
@@ -62,6 +73,7 @@ export const notes = pgTable("notes", {
   title: text("title").notNull(),
   content: text("content").notNull(),
   tags: text("tags").default(""),
+  folderId: integer("folder_id").references(() => folders.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 })

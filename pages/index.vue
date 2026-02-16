@@ -10,17 +10,35 @@
     >
       <NoteSidebar
         v-show="sidebarOpen"
-        :notes="filteredNotes"
-        :all-notes="noteList"
+        :notes="noteList"
         :active-note-id="activeNoteId"
         :active-tag="activeTag"
+        :folders="folderList"
+        :active-folder-id="activeFolderId"
+        :show-all-notes="showLibrary"
         @create="createNote"
         @select="selectNote"
         @filter-tag="handleFilterTag"
+        @select-folder="activeFolderId = $event"
+        @move-note="moveNoteToFolder"
+        @show-library="showLibrary = true"
+        @refresh-folders="refreshFolders"
       />
     </Transition>
     <ClientOnly>
-      <NoteEditor :note="activeNote" @save="saveNote" @delete="deleteNote" />
+      <NoteLibrary
+        v-if="showLibrary"
+        :notes="noteList"
+        :folders="folderList"
+        @select-note="selectNote"
+      />
+      <NoteEditor
+        v-else
+        :note="activeNote"
+        :folders="folderList"
+        @save="saveNote"
+        @delete="deleteNote"
+      />
     </ClientOnly>
   </div>
 </template>
@@ -35,29 +53,41 @@ interface Note {
   content: string
   tags: string | null
   userId: string
+  folderId: number | null
   createdAt: string
   updatedAt: string
 }
 
-const { data: noteList, refresh } = await useFetch("/api/notes", {
+const { data: noteList, refresh } = await useFetch<Note[]>("/api/notes", {
   key: "notes-list",
   default: () => [] as Note[],
 })
 
+interface Folder {
+  id: number
+  name: string
+  parentId: number | null
+  userId: string
+  createdAt: string
+  updatedAt: string
+}
+
+const { data: folderList, refresh: refreshFolders } = await useFetch<Folder[]>(
+  "/api/folders",
+  {
+    key: "folders-list",
+    default: () => [] as Folder[],
+  },
+)
+
 const activeNoteId = ref<number | null>(null)
 const activeNote = ref<Note | null>(null)
 const activeTag = ref<string | null>(null)
-
-const filteredNotes = computed(() => {
-  if (!activeTag.value) return noteList.value
-  return noteList.value.filter((note) =>
-    parseTags(note.tags).includes(activeTag.value!),
-  )
-})
+const activeFolderId = ref<number | null>(null)
+const showLibrary = ref(false)
 
 function handleFilterTag(tag: string | null) {
   activeTag.value = tag
-  // Deselect active note if it doesn't match the new filter
   if (tag && activeNote.value && !parseTags(activeNote.value.tags).includes(tag)) {
     activeNoteId.value = null
     activeNote.value = null
@@ -65,6 +95,7 @@ function handleFilterTag(tag: string | null) {
 }
 
 async function selectNote(id: number) {
+  showLibrary.value = false
   activeNoteId.value = id
   if (import.meta.client && window.innerWidth < 768) {
     sidebarOpen.value = false
@@ -76,7 +107,7 @@ async function selectNote(id: number) {
 }
 
 async function createNote() {
-  activeTag.value = null
+  showLibrary.value = false
   const note = await $fetch("/api/notes", {
     method: "POST",
     body: { title: "", content: "" },
@@ -85,30 +116,47 @@ async function createNote() {
   if (note) selectNote(note.id)
 }
 
-async function saveNote(payload: { id: number; title: string; content: string; tags: string }) {
+async function saveNote(payload: {
+  id: number
+  title: string
+  content: string
+  folderId: number | null
+  tags: string
+}) {
   await $fetch(`/api/notes/${payload.id}`, {
     method: "PUT",
     body: {
       title: payload.title || "Untitled",
       content: payload.content,
       tags: payload.tags,
+      folderId: payload.folderId,
     },
   })
   await refresh()
+}
+
+async function moveNoteToFolder({ noteId, folderId }: { noteId: number; folderId: number | null }) {
+  await $fetch(`/api/notes/${noteId}`, {
+    method: "PUT",
+    body: { folderId },
+  })
+  await refresh()
+  // Update activeNote if it's the one being moved
+  if (activeNote.value?.id === noteId) {
+    activeNote.value = { ...activeNote.value, folderId }
+  }
 }
 
 async function deleteNote(id: number) {
   const noteToDelete = noteList.value.find((n) => n.id === id)
   if (!noteToDelete) return
 
-  //Visually remove the note immediately
   noteList.value = noteList.value.filter((n) => n.id !== id)
   if (activeNoteId.value === id) {
     activeNoteId.value = null
     activeNote.value = null
   }
 
-  // Timer before actual deletion
   let cancelled = false
   const timer = setTimeout(async () => {
     if (!cancelled) {
@@ -117,7 +165,6 @@ async function deleteNote(id: number) {
     }
   }, 5000)
 
-  // Toast avec undo
   toast.add({
     title: "Note supprimée",
     color: "neutral",
@@ -141,19 +188,11 @@ async function deleteNote(id: number) {
   })
 }
 
-// Auto-select first note or deselect if active note disappears from filtered list
+// Auto-select first note
 watch(
-  filteredNotes,
+  noteList,
   (list) => {
-    if (activeNoteId.value && !list.find((n) => n.id === activeNoteId.value)) {
-      // Active note no longer in filtered list
-      if (list.length > 0) {
-        selectNote(list[0]!.id)
-      } else {
-        activeNoteId.value = null
-        activeNote.value = null
-      }
-    } else if (list.length > 0 && !activeNoteId.value) {
+    if (list.length > 0 && !activeNoteId.value && !showLibrary.value) {
       selectNote(list[0]!.id)
     }
   },

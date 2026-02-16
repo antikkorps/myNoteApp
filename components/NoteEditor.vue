@@ -1,7 +1,15 @@
 <template>
   <div v-if="note" class="flex-1 flex flex-col h-full overflow-hidden">
+    <!-- Folder -->
+    <FolderBadge
+      :folder-id="localFolderId"
+      :folders="folders"
+      class="pt-6"
+      @update:folder-id="onFolderChange"
+    />
+
     <!-- Title -->
-    <div class="px-4 md:px-12 pt-8 pb-2">
+    <div class="px-4 md:px-12 pt-2 pb-2">
       <input
         v-model="localTitle"
         placeholder="Untitled"
@@ -45,7 +53,13 @@
       <span v-if="saving">Saving...</span>
       <span v-else-if="lastSaved">Saved</span>
       <span v-else />
-      <UButton size="xs" variant="ghost" color="error" icon="i-lucide-trash-2" @click="$emit('delete', note.id)" />
+      <UButton
+        size="xs"
+        variant="ghost"
+        color="error"
+        icon="i-lucide-trash-2"
+        @click="$emit('delete', note.id)"
+      />
     </div>
   </div>
 
@@ -64,16 +78,27 @@ interface Note {
   content: string
   tags: string | null
   userId: string
+  folderId: number | null
+  createdAt: string
+  updatedAt: string
+}
+
+interface Folder {
+  id: number
+  name: string
+  parentId: number | null
+  userId: string
   createdAt: string
   updatedAt: string
 }
 
 const props = defineProps<{
   note: Note | null
+  folders: Folder[]
 }>()
 
 const emit = defineEmits<{
-  save: [data: { id: number; title: string; content: string; tags: string }]
+  save: [data: { id: number; title: string; content: string; tags: string; folderId: number | null }]
   delete: [id: number]
 }>()
 
@@ -82,6 +107,7 @@ const localContent = ref("")
 const localTags = ref<string[]>([])
 const saving = ref(false)
 const lastSaved = ref(false)
+const localFolderId = ref<number | null>(null)
 
 const fixedItems: EditorToolbarItem[][] = [
   // History controls
@@ -285,6 +311,7 @@ watch(
       localTitle.value = props.note.title
       localContent.value = props.note.content
       localTags.value = parseTags(props.note.tags)
+      localFolderId.value = props.note.folderId
       lastSaved.value = false
       nextTick(() => {
         isLoadingNote = false
@@ -300,6 +327,11 @@ watch(localContent, () => {
   }
 })
 
+function onFolderChange(id: number | null) {
+  localFolderId.value = id
+  scheduleSave()
+}
+
 function scheduleSave() {
   if (saveTimer) clearTimeout(saveTimer)
   saveTimer = setTimeout(() => {
@@ -309,6 +341,7 @@ function scheduleSave() {
         title: localTitle.value,
         content: localContent.value,
         tags: serializeTags(localTags.value),
+        folderId: localFolderId.value,
       })
       lastSaved.value = true
       saving.value = false

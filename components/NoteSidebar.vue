@@ -7,39 +7,24 @@
     </div>
 
     <div class="flex-1 overflow-y-auto">
-      <div
-        v-for="note in notes"
-        :key="note.id"
-        @click="$emit('select', note.id)"
-        class="px-3 py-2 cursor-pointer text-sm border-b border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
-        :class="{ 'bg-gray-200 dark:bg-gray-800 font-medium': note.id === activeNoteId }"
-      >
-        <div class="truncate">{{ note.title || "Untitled" }}</div>
-        <div v-if="getNoteTags(note).length" class="flex flex-wrap gap-1 mt-1">
-          <UBadge
-            v-for="tag in getNoteTags(note).slice(0, 3)"
-            :key="tag"
-            color="neutral"
-            variant="subtle"
-            size="xs"
-          >
-            {{ tag }}
-          </UBadge>
-          <span
-            v-if="getNoteTags(note).length > 3"
-            class="text-xs text-gray-400"
-          >
-            +{{ getNoteTags(note).length - 3 }}
-          </span>
-        </div>
-      </div>
-
-      <p v-if="notes.length === 0" class="p-3 text-sm text-gray-400">No notes yet</p>
+      <FolderTree
+        :folders="folders"
+        :active-folder-id="activeFolderId"
+        :notes="notes"
+        :active-note-id="activeNoteId"
+        :active-tag="activeTag"
+        :show-all-notes="showAllNotes"
+        @select="$emit('select-folder', $event)"
+        @select-note="$emit('select', $event)"
+        @move-note="$emit('move-note', $event)"
+        @show-library="$emit('show-library')"
+        @refresh="$emit('refresh-folders')"
+      />
     </div>
 
     <TagCloud
       class="border-t border-gray-200 dark:border-gray-800 pt-3"
-      :notes="allNotes"
+      :notes="notes"
       :active-tag="activeTag"
       @select="$emit('filter-tag', $event)"
     />
@@ -48,19 +33,21 @@
 
 <script setup lang="ts">
 defineProps<{
-  notes: Array<{ id: number; title: string; tags: string | null }>
-  allNotes: Array<{ tags: string | null }>
+  notes: Array<{ id: number; title: string; tags: string | null; folderId: number | null }>
   activeNoteId: number | null
   activeTag: string | null
+  folders: Array<{ id: number; name: string; parentId: number | null }>
+  activeFolderId: number | null
+  showAllNotes: boolean
 }>()
 
 defineEmits<{
   create: []
   select: [id: number]
   "filter-tag": [tag: string | null]
+  "select-folder": [id: number | null]
+  "move-note": [payload: { noteId: number; folderId: number | null }]
+  "show-library": []
+  "refresh-folders": []
 }>()
-
-function getNoteTags(note: { tags: string | null }): string[] {
-  return parseTags(note.tags)
-}
 </script>
