@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="note"
-    class="flex-1 flex flex-col h-full overflow-hidden"
+    class="flex-1 flex flex-col h-full overflow-hidden relative"
     :class="{ 'font-serif': prefs.serif, 'note-small-text': prefs.smallText }"
   >
     <!-- Folder -->
@@ -26,7 +26,7 @@
     <TagInput v-model="localTags" @update:model-value="scheduleSave" />
 
     <!-- Editor -->
-    <div class="flex-1 overflow-y-auto pb-8" :class="prefs.fullWidth ? 'px-4' : 'px-4 md:px-12'">
+    <div ref="editorScrollContainer" class="flex-1 overflow-y-auto pb-8 scrollbar-thin" :class="prefs.fullWidth ? 'px-4' : 'px-4 md:px-12'">
       <ClientOnly>
         <UEditor
           v-slot="{ editor }"
@@ -44,6 +44,15 @@
             @navigate-note="(id: number) => emit('navigate-note', id)"
           />
 
+          <template v-if="editor">
+            <Teleport :to="outlineAnchor" :disabled="!outlineAnchor">
+              <DocumentOutline
+                :editor="editor"
+                :scroll-container="editorScrollContainer"
+              />
+            </Teleport>
+          </template>
+
           <!-- Toolbar fixe : blocs + historique -->
           <UEditorToolbar
             :editor="editor"
@@ -58,6 +67,9 @@
         </UEditor>
       </ClientOnly>
     </div>
+
+    <!-- Anchor for the outline teleport (stays fixed, outside the scrollable area) -->
+    <div ref="outlineAnchor" class="absolute right-0 top-0 h-full pointer-events-none [&>*]:pointer-events-auto" />
 
     <!-- Bottom bar -->
     <div
@@ -119,6 +131,8 @@ const starterKitConfig = {
   },
 }
 
+const editorScrollContainer = ref<HTMLElement | null>(null)
+const outlineAnchor = ref<HTMLElement | null>(null)
 const localTitle = ref("")
 const localContent = ref("")
 const localTags = ref<string[]>([])

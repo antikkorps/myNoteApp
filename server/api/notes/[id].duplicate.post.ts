@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm"
+import { and, eq, isNull } from "drizzle-orm"
 import { db, notes } from "../../utils/db"
 import { requireAuth } from "../../utils/requireAuth"
 
@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
   const [original] = await db
     .select()
     .from(notes)
-    .where(and(eq(notes.id, id), eq(notes.userId, session.user.id)))
+    .where(and(eq(notes.id, id), eq(notes.userId, session.user.id), isNull(notes.deletedAt)))
 
   if (!original) {
     throw createError({ statusCode: 404, statusMessage: "Note not found" })

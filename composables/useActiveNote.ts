@@ -12,9 +12,10 @@ const noteActionsRegistry = shallowRef<NoteActions | null>(null)
 export function useActiveNote() {
   const activeNote = useState<Note | null>("activeNote", () => null)
   const showLibrary = useState<boolean>("showLibrary", () => false)
+  const showTrash = useState<boolean>("showTrash", () => false)
   const folderList = useState<Folder[]>("folderList", () => [])
 
-  return { activeNote, showLibrary, folderList }
+  return { activeNote, showLibrary, showTrash, folderList }
 }
 
 export function registerNoteActions(actions: NoteActions) {

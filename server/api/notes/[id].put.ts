@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm"
+import { and, eq, isNull } from "drizzle-orm"
 import { db, notes } from "../../utils/db"
 import { requireAuth } from "../../utils/requireAuth"
 
@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
   const [note] = await db
     .update(notes)
     .set(updateData)
-    .where(and(eq(notes.id, id), eq(notes.userId, session.user.id)))
+    .where(and(eq(notes.id, id), eq(notes.userId, session.user.id), isNull(notes.deletedAt)))
     .returning()
 
   if (!note) {

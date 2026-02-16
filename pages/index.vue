@@ -16,18 +16,27 @@
         :folders="folderList"
         :active-folder-id="activeFolderId"
         :show-all-notes="showLibrary"
+        :show-trash="showTrash"
+        :trash-count="trashList.length"
         @create="createNote"
         @select="selectNote"
         @filter-tag="handleFilterTag"
         @select-folder="activeFolderId = $event"
         @move-note="moveNoteToFolder"
-        @show-library="showLibrary = true"
+        @show-library="showLibrary = true; showTrash = false"
         @refresh-folders="refreshFolders"
+        @show-trash="showTrashView"
       />
     </Transition>
     <ClientOnly>
+      <NoteTrash
+        v-if="showTrash"
+        :notes="trashList"
+        @restore="restoreNote"
+        @destroy="destroyNote"
+      />
       <NoteLibrary
-        v-if="showLibrary"
+        v-else-if="showLibrary"
         :notes="noteList"
         :folders="folderList"
         @select-note="selectNote"
@@ -51,12 +60,19 @@ import type { Note, Folder } from "~/types"
 const sidebarOpen = inject("sidebarOpen", ref(true))
 const toast = useToast()
 
-const { activeNote, showLibrary, folderList } = useActiveNote()
+const { activeNote, showLibrary, showTrash, folderList } = useActiveNote()
 
 const { data: noteList, refresh } = await useFetch<Note[]>("/api/notes", {
   key: "notes-list",
   default: () => [] as Note[],
 })
+
+const { data: trashData, refresh: refreshTrash } = await useFetch<Note[]>("/api/notes/trash", {
+  key: "notes-trash",
+  default: () => [] as Note[],
+})
+
+const trashList = computed(() => trashData.value ?? [])
 
 const { data: fetchedFolders, refresh: refreshFolders } = await useFetch<Folder[]>(
   "/api/folders",
@@ -83,8 +99,14 @@ function handleFilterTag(tag: string | null) {
   }
 }
 
+function showTrashView() {
+  showTrash.value = true
+  showLibrary.value = false
+}
+
 async function selectNote(id: number) {
   showLibrary.value = false
+  showTrash.value = false
   activeNoteId.value = id
   if (import.meta.client && window.innerWidth < 768) {
     sidebarOpen.value = false
@@ -97,6 +119,7 @@ async function selectNote(id: number) {
 
 async function createNote() {
   showLibrary.value = false
+  showTrash.value = false
   const note = await $fetch("/api/notes", {
     method: "POST",
     body: { title: "", content: "" },
@@ -159,6 +182,7 @@ async function deleteNote(id: number) {
     if (!cancelled) {
       await $fetch(`/api/notes/${id}`, { method: "DELETE" })
       await refresh()
+      await refreshTrash()
     }
   }, 5000)
 
@@ -185,6 +209,16 @@ async function deleteNote(id: number) {
   })
 }
 
+async function restoreNote(id: number) {
+  await $fetch(`/api/notes/${id}/restore`, { method: "POST" })
+  await Promise.all([refresh(), refreshTrash()])
+}
+
+async function destroyNote(id: number) {
+  await $fetch(`/api/notes/${id}/destroy`, { method: "DELETE" })
+  await refreshTrash()
+}
+
 // Register actions for the context menu
 registerNoteActions({
   duplicate: duplicateNote,
@@ -204,7 +238,7 @@ registerNoteActions({
 watch(
   noteList,
   (list) => {
-    if (list.length > 0 && !activeNoteId.value && !showLibrary.value) {
+    if (list.length > 0 && !activeNoteId.value && !showLibrary.value && !showTrash.value) {
       selectNote(list[0]!.id)
     }
   },

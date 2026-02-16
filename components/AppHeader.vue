@@ -15,7 +15,7 @@
       <span class="text-sm text-gray-500 hidden sm:inline">{{
         session?.data?.user?.email
       }}</span>
-      <NoteContextMenu v-if="activeNote && !showLibrary" />
+      <NoteContextMenu v-if="activeNote && !showLibrary && !showTrash" />
       <UColorModeButton size="sm" variant="ghost" />
       <UButton size="sm" variant="ghost" icon="i-lucide-power" @click="handleSignOut" />
     </div>
@@ -27,7 +27,7 @@ const { signOut, useSession } = useAuth()
 const session = useSession()
 
 const sidebarOpen = inject("sidebarOpen", ref(true))
-const { activeNote, showLibrary } = useActiveNote()
+const { activeNote, showLibrary, showTrash } = useActiveNote()
 
 async function handleSignOut() {
   await signOut()

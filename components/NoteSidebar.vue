@@ -28,6 +28,20 @@
       :active-tag="activeTag"
       @select="$emit('filter-tag', $event)"
     />
+
+    <button
+      class="flex items-center gap-2 px-4 py-3 text-sm border-t border-gray-200 dark:border-gray-800 transition-colors"
+      :class="showTrash
+        ? 'text-primary-500 bg-gray-50 dark:bg-gray-800'
+        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'"
+      @click="$emit('show-trash')"
+    >
+      <UIcon name="i-lucide-trash-2" class="size-4" />
+      <span>Trash</span>
+      <UBadge v-if="trashCount > 0" color="neutral" variant="subtle" size="xs" class="ml-auto">
+        {{ trashCount }}
+      </UBadge>
+    </button>
   </aside>
 </template>
 
@@ -39,6 +53,8 @@ defineProps<{
   folders: Array<{ id: number; name: string; parentId: number | null }>
   activeFolderId: number | null
   showAllNotes: boolean
+  showTrash: boolean
+  trashCount: number
 }>()
 
 defineEmits<{
@@ -49,5 +65,6 @@ defineEmits<{
   "move-note": [payload: { noteId: number; folderId: number | null }]
   "show-library": []
   "refresh-folders": []
+  "show-trash": []
 }>()
 </script>

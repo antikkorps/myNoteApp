@@ -12,6 +12,7 @@ export interface Note {
   userId: string
   folderId: number | null
   preferences: string | null
+  deletedAt: string | null
   createdAt: string
   updatedAt: string
 }

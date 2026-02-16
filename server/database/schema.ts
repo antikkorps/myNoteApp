@@ -75,6 +75,7 @@ export const notes = pgTable("notes", {
   tags: text("tags").default(""),
   folderId: integer("folder_id").references(() => folders.id, { onDelete: "set null" }),
   preferences: text("preferences"),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 })
