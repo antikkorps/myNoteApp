@@ -8,6 +8,13 @@
       "when": 1771234271060,
       "tag": "0000_wise_lockheed",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1771254102026,
+      "tag": "0001_purple_steel_serpent",
+      "breakpoints": true
     }
   ]
 }

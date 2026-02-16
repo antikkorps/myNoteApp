@@ -26,3 +26,11 @@
   content: "🔗 ";
   font-size: 0.85em;
 }
+
+/* Note display preferences */
+.note-small-text .tiptap {
+  font-size: 0.875rem;
+}
+.font-serif .tiptap {
+  font-family: Georgia, "Times New Roman", serif;
+}

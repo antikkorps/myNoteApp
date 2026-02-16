@@ -46,35 +46,19 @@
 </template>
 
 <script setup lang="ts">
+import type { Note, Folder } from "~/types"
+
 const sidebarOpen = inject("sidebarOpen", ref(true))
 const toast = useToast()
 
-interface Note {
-  id: number
-  title: string
-  content: string
-  tags: string | null
-  userId: string
-  folderId: number | null
-  createdAt: string
-  updatedAt: string
-}
+const { activeNote, showLibrary, folderList } = useActiveNote()
 
 const { data: noteList, refresh } = await useFetch<Note[]>("/api/notes", {
   key: "notes-list",
   default: () => [] as Note[],
 })
 
-interface Folder {
-  id: number
-  name: string
-  parentId: number | null
-  userId: string
-  createdAt: string
-  updatedAt: string
-}
-
-const { data: folderList, refresh: refreshFolders } = await useFetch<Folder[]>(
+const { data: fetchedFolders, refresh: refreshFolders } = await useFetch<Folder[]>(
   "/api/folders",
   {
     key: "folders-list",
@@ -82,11 +66,14 @@ const { data: folderList, refresh: refreshFolders } = await useFetch<Folder[]>(
   },
 )
 
+// Sync fetched folders to shared state
+watchEffect(() => {
+  folderList.value = fetchedFolders.value
+})
+
 const activeNoteId = ref<number | null>(null)
-const activeNote = ref<Note | null>(null)
 const activeTag = ref<string | null>(null)
 const activeFolderId = ref<number | null>(null)
-const showLibrary = ref(false)
 
 function handleFilterTag(tag: string | null) {
   activeTag.value = tag
@@ -143,10 +130,18 @@ async function moveNoteToFolder({ noteId, folderId }: { noteId: number; folderId
     body: { folderId },
   })
   await refresh()
-  // Update activeNote if it's the one being moved
   if (activeNote.value?.id === noteId) {
     activeNote.value = { ...activeNote.value, folderId }
   }
+}
+
+async function duplicateNote() {
+  if (!activeNote.value) return
+  const copy = await $fetch<Note>(`/api/notes/${activeNote.value.id}/duplicate`, {
+    method: "POST",
+  })
+  await refresh()
+  if (copy) selectNote(copy.id)
 }
 
 async function deleteNote(id: number) {
@@ -189,6 +184,21 @@ async function deleteNote(id: number) {
     ],
   })
 }
+
+// Register actions for the context menu
+registerNoteActions({
+  duplicate: duplicateNote,
+  delete: () => {
+    if (activeNote.value) deleteNote(activeNote.value.id)
+  },
+  save: () => {
+    // Triggered by context menu — NoteEditor handles its own saving
+  },
+  moveToFolder: async (folderId: number | null) => {
+    if (!activeNote.value) return
+    await moveNoteToFolder({ noteId: activeNote.value.id, folderId })
+  },
+})
 
 // Auto-select first note
 watch(

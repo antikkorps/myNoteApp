@@ -1,5 +1,9 @@
 <template>
-  <div v-if="note" class="flex-1 flex flex-col h-full overflow-hidden">
+  <div
+    v-if="note"
+    class="flex-1 flex flex-col h-full overflow-hidden"
+    :class="{ 'font-serif': prefs.serif, 'note-small-text': prefs.smallText }"
+  >
     <!-- Folder -->
     <FolderBadge
       :folder-id="localFolderId"
@@ -9,7 +13,7 @@
     />
 
     <!-- Title -->
-    <div class="px-4 md:px-12 pt-2 pb-2">
+    <div :class="prefs.fullWidth ? 'px-4' : 'px-4 md:px-12'" class="pt-2 pb-2">
       <input
         v-model="localTitle"
         placeholder="Untitled"
@@ -22,7 +26,7 @@
     <TagInput v-model="localTags" @update:model-value="scheduleSave" />
 
     <!-- Editor -->
-    <div class="flex-1 overflow-y-auto px-4 md:px-12 pb-8">
+    <div class="flex-1 overflow-y-auto pb-8" :class="prefs.fullWidth ? 'px-4' : 'px-4 md:px-12'">
       <ClientOnly>
         <UEditor
           v-slot="{ editor }"
@@ -57,7 +61,8 @@
 
     <!-- Bottom bar -->
     <div
-      class="flex items-center justify-between px-4 md:px-12 py-2 border-t border-gray-200 dark:border-gray-800 text-xs text-gray-400"
+      class="flex items-center justify-between py-2 border-t border-gray-200 dark:border-gray-800 text-xs text-gray-400"
+      :class="prefs.fullWidth ? 'px-4' : 'px-4 md:px-12'"
     >
       <span v-if="saving">Saving...</span>
       <span v-else-if="lastSaved">Saved</span>
@@ -80,32 +85,22 @@
 
 <script setup lang="ts">
 import type { EditorToolbarItem } from "@nuxt/ui"
-
-interface Note {
-  id: number
-  title: string
-  content: string
-  tags: string | null
-  userId: string
-  folderId: number | null
-  createdAt: string
-  updatedAt: string
-}
-
-interface Folder {
-  id: number
-  name: string
-  parentId: number | null
-  userId: string
-  createdAt: string
-  updatedAt: string
-}
+import type { Note, Folder, NotePreferences } from "~/types"
 
 const props = defineProps<{
   note: Note | null
   folders: Folder[]
   notes: Array<{ id: number; title: string }>
 }>()
+
+const prefs = computed<NotePreferences>(() => {
+  if (!props.note?.preferences) return {}
+  try {
+    return JSON.parse(props.note.preferences)
+  } catch {
+    return {}
+  }
+})
 
 const emit = defineEmits<{
   save: [data: { id: number; title: string; content: string; tags: string; folderId: number | null }]

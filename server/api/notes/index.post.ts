@@ -4,7 +4,7 @@ import { requireAuth } from "../../utils/requireAuth"
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)
   const body = await readBody(event)
-  const { title, content, tags, folderId } = body
+  const { title, content, tags, folderId, preferences } = body
 
   const [note] = await db
     .insert(notes)
@@ -14,6 +14,7 @@ export default defineEventHandler(async (event) => {
       content: content || "",
       tags: tags || "",
       folderId: folderId || null,
+      preferences: preferences ? JSON.stringify(preferences) : null,
     })
     .returning()
 
