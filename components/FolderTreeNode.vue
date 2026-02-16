@@ -67,6 +67,7 @@
         group="notes"
         :animation="150"
         ghost-class="opacity-30"
+        :set-data="setNoteDropData"
         @add="onNoteAdded"
       >
         <SidebarNoteItem
@@ -233,5 +234,14 @@ function confirmEdit() {
     emit("rename", props.folder.id, editName.value.trim())
   }
   editing.value = false
+}
+
+function setNoteDropData(dataTransfer: DataTransfer, dragEl: HTMLElement) {
+  const noteId = dragEl.dataset?.id
+  if (!noteId) return
+  const note = props.notes.find((n) => n.id === Number(noteId))
+  if (note) {
+    dataTransfer.setData("application/note-link", JSON.stringify({ id: note.id, title: note.title }))
+  }
 }
 </script>

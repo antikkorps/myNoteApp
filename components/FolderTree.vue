@@ -69,6 +69,7 @@
           group="notes"
           :animation="150"
           ghost-class="opacity-30"
+          :set-data="setNoteDropData"
           @add="onUnfiledNoteAdded"
         >
           <SidebarNoteItem
@@ -188,5 +189,14 @@ async function renameFolder(id: number, name: string) {
 async function deleteFolder(id: number) {
   await $fetch(`/api/folders/${id}`, { method: "DELETE" })
   emit("refresh")
+}
+
+function setNoteDropData(dataTransfer: DataTransfer, dragEl: HTMLElement) {
+  const noteId = dragEl.dataset?.id
+  if (!noteId) return
+  const note = props.notes.find((n) => n.id === Number(noteId))
+  if (note) {
+    dataTransfer.setData("application/note-link", JSON.stringify({ id: note.id, title: note.title }))
+  }
 }
 </script>

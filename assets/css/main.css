@@ -8,3 +8,21 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Internal note links */
+.tiptap a[href^="note://"] {
+  color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 10%, transparent);
+  border-radius: 0.25rem;
+  padding: 0.125rem 0.375rem;
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+.tiptap a[href^="note://"]:hover {
+  background: color-mix(in srgb, var(--ui-primary) 20%, transparent);
+}
+.tiptap a[href^="note://"]::before {
+  content: "🔗 ";
+  font-size: 0.85em;
+}

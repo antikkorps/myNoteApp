@@ -36,8 +36,10 @@
         v-else
         :note="activeNote"
         :folders="folderList"
+        :notes="noteList"
         @save="saveNote"
         @delete="deleteNote"
+        @navigate-note="selectNote"
       />
     </ClientOnly>
   </div>

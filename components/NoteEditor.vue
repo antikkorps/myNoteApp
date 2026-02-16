@@ -28,9 +28,18 @@
           v-slot="{ editor }"
           v-model="localContent"
           content-type="markdown"
+          :starter-kit="starterKitConfig"
           class="min-h-50 flex flex-col gap-2"
           @update:model-value="scheduleSave"
         >
+          <NoteLinkSetup
+            v-if="editor"
+            :editor="editor"
+            :notes="notes"
+            :current-note-id="note?.id"
+            @navigate-note="(id: number) => emit('navigate-note', id)"
+          />
+
           <!-- Toolbar fixe : blocs + historique -->
           <UEditorToolbar
             :editor="editor"
@@ -95,12 +104,25 @@ interface Folder {
 const props = defineProps<{
   note: Note | null
   folders: Folder[]
+  notes: Array<{ id: number; title: string }>
 }>()
 
 const emit = defineEmits<{
   save: [data: { id: number; title: string; content: string; tags: string; folderId: number | null }]
   delete: [id: number]
+  "navigate-note": [id: number]
 }>()
+
+const starterKitConfig = {
+  link: {
+    isAllowedUri: (url: string) => {
+      // Allow note:// internal links in addition to default protocols
+      if (url.startsWith("note://")) return true
+      // Default TipTap allowed protocols
+      return /^(https?:\/\/|mailto:|tel:)/.test(url) || url.startsWith("/") || url.startsWith("#")
+    },
+  },
+}
 
 const localTitle = ref("")
 const localContent = ref("")

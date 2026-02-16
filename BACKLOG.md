@@ -22,10 +22,10 @@
 
 ### Dossiers
 
-- [ ] Créer/renommer/supprimer des dossiers
-- [ ] Déplacer une note dans un dossier
-- [ ] Arborescence de dossiers dans la sidebar
-- [ ] Dossiers imbriqués (sous-dossiers)
+- [x] Créer/renommer/supprimer des dossiers
+- [x] Déplacer une note dans un dossier
+- [x] Arborescence de dossiers dans la sidebar
+- [x] Dossiers imbriqués (sous-dossiers)
 
 ### Responsive
 
