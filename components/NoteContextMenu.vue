@@ -10,6 +10,36 @@ import type { NotePreferences } from "~/types"
 const { activeNote, folderList } = useActiveNote()
 const actions = useNoteActions()
 const toast = useToast()
+const session = useAuth().useSession()
+
+const wordCount = computed(() => {
+  if (!activeNote.value?.content) return 0
+  const text = activeNote.value.content
+    .replace(/[#*_~`>\-\[\]()!|]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+  return text ? text.split(" ").length : 0
+})
+
+const readingTime = computed(() => {
+  const minutes = Math.ceil(wordCount.value / 230)
+  return minutes <= 1 ? "1 min read" : `${minutes} min read`
+})
+
+function formatModifiedDate(dateStr: string): string {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  if (diffMins < 1) return "Just now"
+  if (diffMins < 60) return `${diffMins}m ago`
+  const diffHours = Math.floor(diffMins / 60)
+  if (diffHours < 24) return `${diffHours}h ago`
+  const diffDays = Math.floor(diffHours / 24)
+  if (diffDays === 1) return "Yesterday"
+  if (diffDays < 7) return `${diffDays}d ago`
+  return date.toLocaleDateString()
+}
 
 const preferences = computed<NotePreferences>(() => {
   if (!activeNote.value?.preferences) return {}
@@ -118,6 +148,23 @@ const menuItems = computed(() => [
       icon: "i-lucide-trash-2",
       color: "error" as const,
       onSelect: deleteNote,
+    },
+  ],
+  [
+    {
+      label: `${wordCount.value} words · ${readingTime.value}`,
+      type: "label" as const,
+      icon: "i-lucide-text",
+    },
+    {
+      label: `Modified ${activeNote.value ? formatModifiedDate(activeNote.value.updatedAt) : ""}`,
+      type: "label" as const,
+      icon: "i-lucide-clock",
+    },
+    {
+      label: `By ${session.value?.data?.user?.name || session.value?.data?.user?.email || "you"}`,
+      type: "label" as const,
+      icon: "i-lucide-user",
     },
   ],
 ])

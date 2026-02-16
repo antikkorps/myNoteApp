@@ -10,7 +10,7 @@
 
 ### Recherche
 
-- [ ] Barre de recherche dans la sidebar
+- [ ] Barre de recherche dans la sidebar pour du général et dans le noteContextMenu pour une recherche dans le document
 - [ ] Recherche full-text sur titre + contenu
 - [ ] Résultats en temps réel (filtrage au fur et à mesure)
 

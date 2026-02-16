@@ -183,6 +183,7 @@ async function deleteNote(id: number) {
       await $fetch(`/api/notes/${id}`, { method: "DELETE" })
       await refresh()
       await refreshTrash()
+      showTrashView()
     }
   }, 5000)
 
