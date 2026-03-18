@@ -3,6 +3,7 @@
     v-if="note"
     class="flex-1 flex flex-col h-full overflow-hidden relative"
     :class="{ 'font-serif': prefs.serif, 'note-small-text': prefs.smallText }"
+    @keydown="onFindKeydown"
   >
     <!-- Folder -->
     <FolderBadge
@@ -26,16 +27,23 @@
     <TagInput v-model="localTags" @update:model-value="scheduleSave" />
 
     <!-- Editor -->
-    <div ref="editorScrollContainer" class="flex-1 overflow-y-auto pb-8 scrollbar-thin" :class="prefs.fullWidth ? 'px-4' : 'px-4 md:px-12'">
+    <div ref="editorScrollContainer" class="flex-1 overflow-y-auto pb-8 scrollbar-thin relative" :class="prefs.fullWidth ? 'px-4' : 'px-4 md:px-12'">
       <ClientOnly>
         <UEditor
           v-slot="{ editor }"
           v-model="localContent"
           content-type="markdown"
           :starter-kit="starterKitConfig"
+          :extensions="customExtensions"
           class="min-h-50 flex flex-col gap-2"
           @update:model-value="scheduleSave"
         >
+          <FindBar
+            v-if="showFindBar && editor"
+            :editor="editor"
+            class="sticky top-0 z-10 self-end"
+            @close="onCloseFindBar"
+          />
           <NoteLinkSetup
             v-if="editor"
             :editor="editor"
@@ -98,6 +106,9 @@
 <script setup lang="ts">
 import type { EditorToolbarItem } from "@nuxt/ui"
 import type { Note, Folder, NotePreferences } from "~/types"
+import { SearchHighlight } from "~/utils/searchHighlight"
+
+const { findBarOpen, closeFindBar } = useFindInNote()
 
 const props = defineProps<{
   note: Note | null
@@ -133,6 +144,26 @@ const starterKitConfig = {
 
 const editorScrollContainer = ref<HTMLElement | null>(null)
 const outlineAnchor = ref<HTMLElement | null>(null)
+const showFindBar = ref(false)
+const customExtensions = [SearchHighlight]
+
+watch(findBarOpen, (open) => {
+  if (open) {
+    showFindBar.value = true
+    closeFindBar()
+  }
+})
+
+function onFindKeydown(e: KeyboardEvent) {
+  if ((e.ctrlKey || e.metaKey) && e.key === "f") {
+    e.preventDefault()
+    showFindBar.value = true
+  }
+}
+
+function onCloseFindBar() {
+  showFindBar.value = false
+}
 const localTitle = ref("")
 const localContent = ref("")
 const localTags = ref<string[]>([])
@@ -380,3 +411,15 @@ function scheduleSave() {
   }, 1000)
 }
 </script>
+
+<style>
+.search-match {
+  background: #fde68a;
+  border-radius: 2px;
+}
+.search-match-current {
+  background: #f97316;
+  color: white;
+  border-radius: 2px;
+}
+</style>

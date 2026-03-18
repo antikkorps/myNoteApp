@@ -10,7 +10,7 @@
     >
       <NoteSidebar
         v-show="sidebarOpen"
-        :notes="noteList"
+        :notes="displayedNotes"
         :active-note-id="activeNoteId"
         :active-tag="activeTag"
         :folders="folderList"
@@ -18,6 +18,7 @@
         :show-all-notes="showLibrary"
         :show-trash="showTrash"
         :trash-count="trashList.length"
+        :search-query="searchQuery"
         @create="createNote"
         @select="selectNote"
         @filter-tag="handleFilterTag"
@@ -26,6 +27,7 @@
         @show-library="showLibrary = true; showTrash = false"
         @refresh-folders="refreshFolders"
         @show-trash="showTrashView"
+        @search="searchQuery = $event"
       />
     </Transition>
     <ClientOnly>
@@ -90,9 +92,21 @@ watchEffect(() => {
 const activeNoteId = ref<number | null>(null)
 const activeTag = ref<string | null>(null)
 const activeFolderId = ref<number | null>(null)
+const searchQuery = ref("")
+
+const displayedNotes = computed(() => {
+  const q = searchQuery.value.toLowerCase().trim()
+  if (!q) return noteList.value
+  return noteList.value.filter(
+    (n) =>
+      n.title.toLowerCase().includes(q) ||
+      (n.content && n.content.toLowerCase().includes(q)),
+  )
+})
 
 function handleFilterTag(tag: string | null) {
   activeTag.value = tag
+  searchQuery.value = ""
   if (tag && activeNote.value && !parseTags(activeNote.value.tags).includes(tag)) {
     activeNoteId.value = null
     activeNote.value = null

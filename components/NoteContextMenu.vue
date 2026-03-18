@@ -11,6 +11,7 @@ const { activeNote, folderList } = useActiveNote()
 const actions = useNoteActions()
 const toast = useToast()
 const session = useAuth().useSession()
+const { openFindBar } = useFindInNote()
 
 const wordCount = computed(() => {
   if (!activeNote.value?.content) return 0
@@ -121,6 +122,12 @@ const menuItems = computed(() => [
     },
   ],
   [
+    {
+      label: "Find in note",
+      icon: "i-lucide-search",
+      shortcut: "⌘F",
+      onSelect: openFindBar,
+    },
     {
       label: "Copy link",
       icon: "i-lucide-link",
