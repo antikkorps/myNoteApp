@@ -1,7 +1,20 @@
 <template>
-  <div v-if="note" class="flex-1 flex flex-col h-full overflow-hidden">
+  <div
+    v-if="note"
+    class="flex-1 flex flex-col h-full overflow-hidden relative"
+    :class="{ 'font-serif': prefs.serif, 'note-small-text': prefs.smallText }"
+    @keydown="onFindKeydown"
+  >
+    <!-- Folder -->
+    <FolderBadge
+      :folder-id="localFolderId"
+      :folders="folders"
+      class="pt-6"
+      @update:folder-id="onFolderChange"
+    />
+
     <!-- Title -->
-    <div class="px-4 md:px-12 pt-8 pb-2">
+    <div :class="prefs.fullWidth ? 'px-4' : 'px-4 md:px-12'" class="pt-2 pb-2">
       <input
         v-model="localTitle"
         placeholder="Untitled"
@@ -10,16 +23,44 @@
       />
     </div>
 
+    <!-- Tags -->
+    <TagInput v-model="localTags" @update:model-value="scheduleSave" />
+
     <!-- Editor -->
-    <div class="flex-1 overflow-y-auto px-4 md:px-12 pb-8">
+    <div ref="editorScrollContainer" class="flex-1 overflow-y-auto pb-8 scrollbar-thin relative" :class="prefs.fullWidth ? 'px-4' : 'px-4 md:px-12'">
       <ClientOnly>
         <UEditor
           v-slot="{ editor }"
           v-model="localContent"
           content-type="markdown"
+          :starter-kit="starterKitConfig"
+          :extensions="customExtensions"
           class="min-h-50 flex flex-col gap-2"
           @update:model-value="scheduleSave"
         >
+          <FindBar
+            v-if="showFindBar && editor"
+            :editor="editor"
+            class="sticky top-0 z-10 self-end"
+            @close="onCloseFindBar"
+          />
+          <NoteLinkSetup
+            v-if="editor"
+            :editor="editor"
+            :notes="notes"
+            :current-note-id="note?.id"
+            @navigate-note="(id: number) => emit('navigate-note', id)"
+          />
+
+          <template v-if="editor">
+            <Teleport :to="outlineAnchor" :disabled="!outlineAnchor">
+              <DocumentOutline
+                :editor="editor"
+                :scroll-container="editorScrollContainer"
+              />
+            </Teleport>
+          </template>
+
           <!-- Toolbar fixe : blocs + historique -->
           <UEditorToolbar
             :editor="editor"
@@ -35,14 +76,24 @@
       </ClientOnly>
     </div>
 
+    <!-- Anchor for the outline teleport (stays fixed, outside the scrollable area) -->
+    <div ref="outlineAnchor" class="absolute right-0 top-0 h-full pointer-events-none [&>*]:pointer-events-auto" />
+
     <!-- Bottom bar -->
     <div
-      class="flex items-center justify-between px-4 md:px-12 py-2 border-t border-gray-200 dark:border-gray-800 text-xs text-gray-400"
+      class="flex items-center justify-between py-2 border-t border-gray-200 dark:border-gray-800 text-xs text-gray-400"
+      :class="prefs.fullWidth ? 'px-4' : 'px-4 md:px-12'"
     >
       <span v-if="saving">Saving...</span>
       <span v-else-if="lastSaved">Saved</span>
       <span v-else />
-      <UButton size="xs" variant="ghost" color="error" icon="i-lucide-trash-2" @click="$emit('delete', note.id)" />
+      <UButton
+        size="xs"
+        variant="ghost"
+        color="error"
+        icon="i-lucide-trash-2"
+        @click="$emit('delete', note.id)"
+      />
     </div>
   </div>
 
@@ -54,30 +105,71 @@
 
 <script setup lang="ts">
 import type { EditorToolbarItem } from "@nuxt/ui"
+import type { Note, Folder, NotePreferences } from "~/types"
+import { SearchHighlight } from "~/utils/searchHighlight"
 
-interface Note {
-  id: number
-  title: string
-  content: string
-  tags: string | null
-  userId: string
-  createdAt: string
-  updatedAt: string
-}
+const { findBarOpen, closeFindBar } = useFindInNote()
 
 const props = defineProps<{
   note: Note | null
+  folders: Folder[]
+  notes: Array<{ id: number; title: string }>
 }>()
+
+const prefs = computed<NotePreferences>(() => {
+  if (!props.note?.preferences) return {}
+  try {
+    return JSON.parse(props.note.preferences)
+  } catch {
+    return {}
+  }
+})
 
 const emit = defineEmits<{
-  save: [data: { id: number; title: string; content: string }]
+  save: [data: { id: number; title: string; content: string; tags: string; folderId: number | null }]
   delete: [id: number]
+  "navigate-note": [id: number]
 }>()
 
+const starterKitConfig = {
+  link: {
+    isAllowedUri: (url: string) => {
+      // Allow note:// internal links in addition to default protocols
+      if (url.startsWith("note://")) return true
+      // Default TipTap allowed protocols
+      return /^(https?:\/\/|mailto:|tel:)/.test(url) || url.startsWith("/") || url.startsWith("#")
+    },
+  },
+}
+
+const editorScrollContainer = ref<HTMLElement | null>(null)
+const outlineAnchor = ref<HTMLElement | null>(null)
+const showFindBar = ref(false)
+const customExtensions = [SearchHighlight]
+
+watch(findBarOpen, (open) => {
+  if (open) {
+    showFindBar.value = true
+    closeFindBar()
+  }
+})
+
+function onFindKeydown(e: KeyboardEvent) {
+  if ((e.ctrlKey || e.metaKey) && e.key === "f") {
+    e.preventDefault()
+    showFindBar.value = true
+  }
+}
+
+function onCloseFindBar() {
+  showFindBar.value = false
+}
 const localTitle = ref("")
 const localContent = ref("")
+const localTags = ref<string[]>([])
 const saving = ref(false)
 const lastSaved = ref(false)
+const localFolderId = ref<number | null>(null)
 
 const fixedItems: EditorToolbarItem[][] = [
   // History controls
@@ -280,6 +372,8 @@ watch(
       isLoadingNote = true
       localTitle.value = props.note.title
       localContent.value = props.note.content
+      localTags.value = parseTags(props.note.tags)
+      localFolderId.value = props.note.folderId
       lastSaved.value = false
       nextTick(() => {
         isLoadingNote = false
@@ -295,6 +389,11 @@ watch(localContent, () => {
   }
 })
 
+function onFolderChange(id: number | null) {
+  localFolderId.value = id
+  scheduleSave()
+}
+
 function scheduleSave() {
   if (saveTimer) clearTimeout(saveTimer)
   saveTimer = setTimeout(() => {
@@ -303,6 +402,8 @@ function scheduleSave() {
         id: props.note.id,
         title: localTitle.value,
         content: localContent.value,
+        tags: serializeTags(localTags.value),
+        folderId: localFolderId.value,
       })
       lastSaved.value = true
       saving.value = false
@@ -310,3 +411,15 @@ function scheduleSave() {
   }, 1000)
 }
 </script>
+
+<style>
+.search-match {
+  background: #fde68a;
+  border-radius: 2px;
+}
+.search-match-current {
+  background: #f97316;
+  color: white;
+  border-radius: 2px;
+}
+</style>

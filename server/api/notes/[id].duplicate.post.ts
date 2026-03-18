@@ -6,15 +6,26 @@ export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)
   const id = Number(getRouterParam(event, "id"))
 
-  const [note] = await db
-    .update(notes)
-    .set({ deletedAt: new Date() })
+  const [original] = await db
+    .select()
+    .from(notes)
     .where(and(eq(notes.id, id), eq(notes.userId, session.user.id), isNull(notes.deletedAt)))
-    .returning()
 
-  if (!note) {
+  if (!original) {
     throw createError({ statusCode: 404, statusMessage: "Note not found" })
   }
 
-  return { deleted: true }
+  const [copy] = await db
+    .insert(notes)
+    .values({
+      userId: session.user.id,
+      title: `Copy of ${original.title}`,
+      content: original.content,
+      tags: original.tags || "",
+      folderId: original.folderId,
+      preferences: original.preferences,
+    })
+    .returning()
+
+  return copy
 })

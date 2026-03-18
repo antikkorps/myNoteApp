@@ -10,22 +10,22 @@
 
 ### Recherche
 
-- [ ] Barre de recherche dans la sidebar
+- [ ] Barre de recherche dans la sidebar pour du général et dans le noteContextMenu pour une recherche dans le document
 - [ ] Recherche full-text sur titre + contenu
 - [ ] Résultats en temps réel (filtrage au fur et à mesure)
 
 ### Tags
 
-- [ ] Interface d'ajout/suppression de tags sur une note
-- [ ] Nuage de tags dans la sidebar
-- [ ] Filtrer les notes par tag
+- [x] Interface d'ajout/suppression de tags sur une note
+- [x] Nuage de tags dans la sidebar
+- [x] Filtrer les notes par tag
 
 ### Dossiers
 
-- [ ] Créer/renommer/supprimer des dossiers
-- [ ] Déplacer une note dans un dossier
-- [ ] Arborescence de dossiers dans la sidebar
-- [ ] Dossiers imbriqués (sous-dossiers)
+- [x] Créer/renommer/supprimer des dossiers
+- [x] Déplacer une note dans un dossier
+- [x] Arborescence de dossiers dans la sidebar
+- [x] Dossiers imbriqués (sous-dossiers)
 
 ### Responsive
 

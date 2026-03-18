@@ -10,41 +10,117 @@
     >
       <NoteSidebar
         v-show="sidebarOpen"
-        :notes="noteList"
+        :notes="displayedNotes"
         :active-note-id="activeNoteId"
+        :active-tag="activeTag"
+        :folders="folderList"
+        :active-folder-id="activeFolderId"
+        :show-all-notes="showLibrary"
+        :show-trash="showTrash"
+        :trash-count="trashList.length"
+        :search-query="searchQuery"
         @create="createNote"
         @select="selectNote"
+        @filter-tag="handleFilterTag"
+        @select-folder="activeFolderId = $event"
+        @move-note="moveNoteToFolder"
+        @show-library="showLibrary = true; showTrash = false"
+        @refresh-folders="refreshFolders"
+        @show-trash="showTrashView"
+        @search="searchQuery = $event"
       />
     </Transition>
     <ClientOnly>
-      <NoteEditor :note="activeNote" @save="saveNote" @delete="deleteNote" />
+      <NoteTrash
+        v-if="showTrash"
+        :notes="trashList"
+        @restore="restoreNote"
+        @destroy="destroyNote"
+      />
+      <NoteLibrary
+        v-else-if="showLibrary"
+        :notes="noteList"
+        :folders="folderList"
+        @select-note="selectNote"
+      />
+      <NoteEditor
+        v-else
+        :note="activeNote"
+        :folders="folderList"
+        :notes="noteList"
+        @save="saveNote"
+        @delete="deleteNote"
+        @navigate-note="selectNote"
+      />
     </ClientOnly>
   </div>
 </template>
 
 <script setup lang="ts">
+import type { Note, Folder } from "~/types"
+
 const sidebarOpen = inject("sidebarOpen", ref(true))
 const toast = useToast()
 
-interface Note {
-  id: number
-  title: string
-  content: string
-  tags: string | null
-  userId: string
-  createdAt: string
-  updatedAt: string
-}
+const { activeNote, showLibrary, showTrash, folderList } = useActiveNote()
 
-const { data: noteList, refresh } = await useFetch("/api/notes", {
+const { data: noteList, refresh } = await useFetch<Note[]>("/api/notes", {
   key: "notes-list",
   default: () => [] as Note[],
 })
 
+const { data: trashData, refresh: refreshTrash } = await useFetch<Note[]>("/api/notes/trash", {
+  key: "notes-trash",
+  default: () => [] as Note[],
+})
+
+const trashList = computed(() => trashData.value ?? [])
+
+const { data: fetchedFolders, refresh: refreshFolders } = await useFetch<Folder[]>(
+  "/api/folders",
+  {
+    key: "folders-list",
+    default: () => [] as Folder[],
+  },
+)
+
+// Sync fetched folders to shared state
+watchEffect(() => {
+  folderList.value = fetchedFolders.value
+})
+
 const activeNoteId = ref<number | null>(null)
-const activeNote = ref<Note | null>(null)
+const activeTag = ref<string | null>(null)
+const activeFolderId = ref<number | null>(null)
+const searchQuery = ref("")
+
+const displayedNotes = computed(() => {
+  const q = searchQuery.value.toLowerCase().trim()
+  if (!q) return noteList.value
+  return noteList.value.filter(
+    (n) =>
+      n.title.toLowerCase().includes(q) ||
+      (n.content && n.content.toLowerCase().includes(q)),
+  )
+})
+
+function handleFilterTag(tag: string | null) {
+  activeTag.value = tag
+  searchQuery.value = ""
+  if (tag && activeNote.value && !parseTags(activeNote.value.tags).includes(tag)) {
+    activeNoteId.value = null
+    activeNote.value = null
+  }
+}
+
+function showTrashView() {
+  showTrash.value = true
+  showLibrary.value = false
+}
 
 async function selectNote(id: number) {
+  showLibrary.value = false
+  showTrash.value = false
   activeNoteId.value = id
   if (import.meta.client && window.innerWidth < 768) {
     sidebarOpen.value = false
@@ -56,6 +132,8 @@ async function selectNote(id: number) {
 }
 
 async function createNote() {
+  showLibrary.value = false
+  showTrash.value = false
   const note = await $fetch("/api/notes", {
     method: "POST",
     body: { title: "", content: "" },
@@ -64,39 +142,65 @@ async function createNote() {
   if (note) selectNote(note.id)
 }
 
-async function saveNote(payload: { id: number; title: string; content: string }) {
+async function saveNote(payload: {
+  id: number
+  title: string
+  content: string
+  folderId: number | null
+  tags: string
+}) {
   await $fetch(`/api/notes/${payload.id}`, {
     method: "PUT",
     body: {
       title: payload.title || "Untitled",
       content: payload.content,
-      tags: "",
+      tags: payload.tags,
+      folderId: payload.folderId,
     },
   })
   await refresh()
+}
+
+async function moveNoteToFolder({ noteId, folderId }: { noteId: number; folderId: number | null }) {
+  await $fetch(`/api/notes/${noteId}`, {
+    method: "PUT",
+    body: { folderId },
+  })
+  await refresh()
+  if (activeNote.value?.id === noteId) {
+    activeNote.value = { ...activeNote.value, folderId }
+  }
+}
+
+async function duplicateNote() {
+  if (!activeNote.value) return
+  const copy = await $fetch<Note>(`/api/notes/${activeNote.value.id}/duplicate`, {
+    method: "POST",
+  })
+  await refresh()
+  if (copy) selectNote(copy.id)
 }
 
 async function deleteNote(id: number) {
   const noteToDelete = noteList.value.find((n) => n.id === id)
   if (!noteToDelete) return
 
-  //Visually remove the note immediately
   noteList.value = noteList.value.filter((n) => n.id !== id)
   if (activeNoteId.value === id) {
     activeNoteId.value = null
     activeNote.value = null
   }
 
-  // Timer before actual deletion
   let cancelled = false
   const timer = setTimeout(async () => {
     if (!cancelled) {
       await $fetch(`/api/notes/${id}`, { method: "DELETE" })
       await refresh()
+      await refreshTrash()
+      showTrashView()
     }
   }, 5000)
 
-  // Toast avec undo
   toast.add({
     title: "Note supprimée",
     color: "neutral",
@@ -120,11 +224,36 @@ async function deleteNote(id: number) {
   })
 }
 
-// Auto-sélectionner la première note au chargement
+async function restoreNote(id: number) {
+  await $fetch(`/api/notes/${id}/restore`, { method: "POST" })
+  await Promise.all([refresh(), refreshTrash()])
+}
+
+async function destroyNote(id: number) {
+  await $fetch(`/api/notes/${id}/destroy`, { method: "DELETE" })
+  await refreshTrash()
+}
+
+// Register actions for the context menu
+registerNoteActions({
+  duplicate: duplicateNote,
+  delete: () => {
+    if (activeNote.value) deleteNote(activeNote.value.id)
+  },
+  save: () => {
+    // Triggered by context menu — NoteEditor handles its own saving
+  },
+  moveToFolder: async (folderId: number | null) => {
+    if (!activeNote.value) return
+    await moveNoteToFolder({ noteId: activeNote.value.id, folderId })
+  },
+})
+
+// Auto-select first note
 watch(
   noteList,
   (list) => {
-    if (list && list.length > 0 && !activeNoteId.value) {
+    if (list.length > 0 && !activeNoteId.value && !showLibrary.value && !showTrash.value) {
       selectNote(list[0]!.id)
     }
   },

@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm"
+import { and, eq, isNotNull } from "drizzle-orm"
 import { db, notes } from "../../utils/db"
 import { requireAuth } from "../../utils/requireAuth"
 
@@ -8,13 +8,13 @@ export default defineEventHandler(async (event) => {
 
   const [note] = await db
     .update(notes)
-    .set({ deletedAt: new Date() })
-    .where(and(eq(notes.id, id), eq(notes.userId, session.user.id), isNull(notes.deletedAt)))
+    .set({ deletedAt: null, updatedAt: new Date() })
+    .where(and(eq(notes.id, id), eq(notes.userId, session.user.id), isNotNull(notes.deletedAt)))
     .returning()
 
   if (!note) {
-    throw createError({ statusCode: 404, statusMessage: "Note not found" })
+    throw createError({ statusCode: 404, statusMessage: "Note not found in trash" })
   }
 
-  return { deleted: true }
+  return note
 })
