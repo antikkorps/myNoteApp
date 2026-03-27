@@ -16,6 +16,7 @@ export default defineNuxtConfig({
     betterAuthSecret: process.env.BETTER_AUTH_SECRET || "",
     betterAuthUrl: process.env.BETTER_AUTH_URL || "",
     adminPassword: process.env.ADMIN_PASSWORD || "",
+    uploadDir: process.env.UPLOAD_DIR || "./storage/uploads",
   },
   vite: {
     optimizeDeps: {

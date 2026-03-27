@@ -4,15 +4,19 @@
 
 ### Images & Fichiers
 
-- [ ] Upload d'images dans l'éditeur (drag & drop + bouton)
-- [ ] Pièces jointes sur les notes (PDF, fichiers)
-- [ ] Stockage des fichiers (local ou S3)
+- [x] Stockage des fichiers (local filesystem, abstraction pour S3 futur)
+- [x] API upload/download/delete + table attachments en DB
+- [x] Upload d'images dans l'éditeur (drag & drop + paste + bouton toolbar)
+- [x] Bubble toolbar image (download / delete au clic sur une image)
+- [ ] Redimensionnement d'images dans l'éditeur (resize TipTap — à investiguer)
+- [ ] Pièces jointes non-image (PDF, fichiers) — upload OK mais insertion lien dans l'éditeur KO
+- [ ] Panneau pièces jointes sous l'éditeur (liste des fichiers attachés à une note)
 
 ### Recherche
 
-- [ ] Barre de recherche dans la sidebar pour du général et dans le noteContextMenu pour une recherche dans le document
-- [ ] Recherche full-text sur titre + contenu
-- [ ] Résultats en temps réel (filtrage au fur et à mesure)
+- [x] Barre de recherche dans la sidebar pour du général et dans le noteContextMenu pour une recherche dans le document
+- [x] Recherche full-text sur titre + contenu
+- [x] Résultats en temps réel (filtrage au fur et à mesure)
 
 ### Tags
 
@@ -37,3 +41,47 @@
 ### light dark mode
 
 - [x] Toggle light/dark mode (UColorModeButton dans le header)
+
+### Favoris & Organisation
+
+- [ ] Favoris / épinglage de notes (accès rapide)
+- [ ] Tri des notes (date, titre, alphabétique)
+- [ ] Notes archivées (état intermédiaire entre actif et corbeille)
+
+### Export & Import
+
+- [ ] Export Markdown / JSON
+- [ ] Import Markdown (migration depuis d'autres apps)
+
+### Historique & Versions
+
+- [ ] Historique de versions (snapshots automatiques à chaque save)
+- [ ] Diff view entre versions
+
+### Templates
+
+- [ ] Templates de notes (meeting, todo, journal...)
+
+### Raccourcis clavier
+
+- [ ] Raccourcis globaux (Ctrl+N nouvelle note, Ctrl+Shift+F recherche...)
+- [ ] Raccourcis Markdown live dans l'éditeur (#, -, > convertis automatiquement)
+
+### Éditeur avancé
+
+- [ ] Tableaux (extension TipTap Table)
+- [ ] Checklists / task lists (extension TipTap TaskList)
+
+### Collaboration
+
+- [ ] Notes partagées par lien public
+- [ ] Partage entre utilisateurs
+
+### Offline & PWA
+
+- [ ] Service worker + cache offline
+- [ ] Sync queue pour les changements hors-ligne
+
+### Notifications
+
+- [ ] Rappels / notifications sur une note à une date donnée

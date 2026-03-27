@@ -1,6 +1,6 @@
-const findBarOpen = useState<boolean>("findBarOpen", () => false)
-
 export function useFindInNote() {
+  const findBarOpen = useState<boolean>("findBarOpen", () => false)
+
   function openFindBar() {
     findBarOpen.value = true
   }

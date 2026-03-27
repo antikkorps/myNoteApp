@@ -35,8 +35,11 @@
           content-type="markdown"
           :starter-kit="starterKitConfig"
           :extensions="customExtensions"
+          :editor-props="imageEditorProps"
+          :image="false"
           class="min-h-50 flex flex-col gap-2"
           @update:model-value="scheduleSave"
+          :on-create="({ editor: e }: any) => { editorRef = e }"
         >
           <FindBar
             v-if="showFindBar && editor"
@@ -62,15 +65,32 @@
           </template>
 
           <!-- Toolbar fixe : blocs + historique -->
-          <UEditorToolbar
-            :editor="editor"
-            :items="fixedItems"
-            layout="fixed"
-            class="overflow-x-auto scrollbar-hide"
-          />
+          <div class="flex items-center gap-1">
+            <UEditorToolbar
+              :editor="editor"
+              :items="fixedItems"
+              layout="fixed"
+              class="overflow-x-auto scrollbar-hide"
+            />
+
+            <EditorImageButton
+              v-if="editor && note"
+              :editor="editor"
+              :note-id="note.id"
+            />
+          </div>
 
           <!-- Toolbar bubble : formatage texte -->
           <UEditorToolbar :editor="editor" :items="bubbleItems" layout="bubble" />
+
+          <!-- Toolbar bubble : actions image (download / delete) -->
+          <UEditorToolbar
+            :editor="editor"
+            :items="imageBubbleItems(editor)"
+            layout="bubble"
+            :should-show="({ editor: e, view }: any) => e.isActive('image') && view.hasFocus()"
+          />
+
           <UEditorDragHandle :editor="editor" />
         </UEditor>
       </ClientOnly>
@@ -105,10 +125,14 @@
 
 <script setup lang="ts">
 import type { EditorToolbarItem } from "@nuxt/ui"
+import type { Editor } from "@tiptap/vue-3"
 import type { Note, Folder, NotePreferences } from "~/types"
 import { SearchHighlight } from "~/utils/searchHighlight"
+import Image from "@tiptap/extension-image"
 
 const { findBarOpen, closeFindBar } = useFindInNote()
+const toast = useToast()
+const { upload, uploading: imageUploading, isImageFile } = useImageUpload()
 
 const props = defineProps<{
   note: Note | null
@@ -145,7 +169,58 @@ const starterKitConfig = {
 const editorScrollContainer = ref<HTMLElement | null>(null)
 const outlineAnchor = ref<HTMLElement | null>(null)
 const showFindBar = ref(false)
-const customExtensions = [SearchHighlight]
+const customExtensions = [
+  SearchHighlight,
+  Image.configure({
+    resize: {
+      enabled: true,
+      directions: ["top-left", "top-right", "bottom-left", "bottom-right"],
+      minWidth: 100,
+      minHeight: 100,
+      alwaysPreserveAspectRatio: true,
+    },
+  }),
+]
+const editorRef = ref<Editor | null>(null)
+
+async function handleFileUpload(file: File, editor: Editor) {
+  if (!props.note) return false
+
+  try {
+    const result = await upload(file, props.note.id)
+    if (isImageFile(file)) {
+      editor.chain().focus().setImage({ src: result.url, alt: result.filename }).run()
+    } else {
+      // Insert a download link for non-image files
+      const linkMarkdown = `[📎 ${result.filename}](${result.url})`
+      editor.commands.insertContent(linkMarkdown, { contentType: "markdown" })
+    }
+  } catch (err: any) {
+    toast.add({ title: "Upload failed", description: err?.data?.statusMessage || "Could not upload image", color: "error" })
+  }
+  return true
+}
+
+const imageEditorProps = {
+  handlePaste(_view: any, event: ClipboardEvent) {
+    const files = Array.from(event.clipboardData?.files || [])
+    const file = files[0]
+    if (!file || !editorRef.value) return false
+
+    handleFileUpload(file, editorRef.value as unknown as Editor)
+    return true
+  },
+  handleDrop(_view: any, event: DragEvent, _slice: any, moved: boolean) {
+    if (moved) return false
+
+    const files = Array.from(event.dataTransfer?.files || [])
+    const file = files[0]
+    if (!file || !editorRef.value) return false
+
+    handleFileUpload(file, editorRef.value as unknown as Editor)
+    return true
+  },
+}
 
 watch(findBarOpen, (open) => {
   if (open) {
@@ -333,6 +408,37 @@ const fixedItems: EditorToolbarItem[][] = [
     },
   ],
 ]
+
+// Toolbar bubble : actions image (apparaît au clic sur une image)
+function imageBubbleItems(editor: Editor): EditorToolbarItem[][] {
+  const node = editor.state.doc.nodeAt(editor.state.selection.from)
+
+  return [
+    [
+      {
+        icon: "i-lucide-download",
+        tooltip: { text: "Download" },
+        to: node?.attrs?.src,
+        download: true,
+      } as any,
+    ],
+    [
+      {
+        icon: "i-lucide-trash",
+        tooltip: { text: "Delete" },
+        onClick: () => {
+          const { state } = editor
+          const pos = state.selection.from
+          const selectedNode = state.doc.nodeAt(pos)
+
+          if (selectedNode && selectedNode.type.name === "image") {
+            editor.chain().focus().deleteRange({ from: pos, to: pos + selectedNode.nodeSize }).run()
+          }
+        },
+      } as any,
+    ],
+  ]
+}
 
 // Toolbar bubble : formatage inline (apparaît à la sélection)
 const bubbleItems: EditorToolbarItem[][] = [
