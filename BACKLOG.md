@@ -8,9 +8,9 @@
 - [x] API upload/download/delete + table attachments en DB
 - [x] Upload d'images dans l'éditeur (drag & drop + paste + bouton toolbar)
 - [x] Bubble toolbar image (download / delete au clic sur une image)
-- [ ] Redimensionnement d'images dans l'éditeur (resize TipTap — à investiguer)
-- [ ] Pièces jointes non-image (PDF, fichiers) — upload OK mais insertion lien dans l'éditeur KO
-- [ ] Panneau pièces jointes sous l'éditeur (liste des fichiers attachés à une note)
+- [x] Redimensionnement d'images dans l'éditeur (resize TipTap — handles aux coins)
+- [x] Pièces jointes non-image (PDF, fichiers) — lien cliquable inséré dans l'éditeur
+- [x] Panneau pièces jointes sous l'éditeur (liste des fichiers attachés à une note)
 
 ### Recherche
 

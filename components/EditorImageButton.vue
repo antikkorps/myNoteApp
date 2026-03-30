@@ -3,17 +3,17 @@
     size="xs"
     variant="ghost"
     color="neutral"
-    icon="i-lucide-image-plus"
+    icon="i-lucide-paperclip"
     :loading="uploading"
     @click="openFilePicker"
   >
-    <UTooltip text="Insert image" />
+    <UTooltip text="Insert file" />
   </UButton>
 
   <input
     ref="fileInput"
     type="file"
-    accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+    accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,application/pdf,text/plain,text/markdown,application/zip,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation"
     class="hidden"
     @change="onFileSelected"
   />
@@ -28,7 +28,7 @@ const props = defineProps<{
 }>()
 
 const toast = useToast()
-const { upload, uploading } = useImageUpload()
+const { upload, uploading, isImageFile } = useImageUpload()
 const fileInput = ref<HTMLInputElement | null>(null)
 
 function openFilePicker() {
@@ -42,9 +42,17 @@ async function onFileSelected(event: Event) {
 
   try {
     const result = await upload(file, props.noteId)
-    props.editor.chain().focus().setImage({ src: result.url, alt: result.filename }).run()
+    if (isImageFile(file)) {
+      props.editor.chain().focus().setImage({ src: result.url, alt: result.filename }).run()
+    } else {
+      props.editor.chain().focus().insertContent({
+        type: 'text',
+        text: `📎 ${result.filename}`,
+        marks: [{ type: 'link', attrs: { href: result.url, target: '_blank' } }],
+      }).run()
+    }
   } catch (err: any) {
-    toast.add({ title: "Upload failed", description: err?.data?.statusMessage || "Could not upload image", color: "error" })
+    toast.add({ title: "Upload failed", description: err?.data?.statusMessage || "Could not upload file", color: "error" })
   }
 
   // Reset input so same file can be re-selected

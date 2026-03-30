@@ -99,6 +99,9 @@
     <!-- Anchor for the outline teleport (stays fixed, outside the scrollable area) -->
     <div ref="outlineAnchor" class="absolute right-0 top-0 h-full pointer-events-none [&>*]:pointer-events-auto" />
 
+    <!-- Attachments panel -->
+    <NoteAttachments v-if="note" ref="attachmentsPanel" :note-id="note.id" :key="`att-${note.id}-${attachmentsVersion}`" />
+
     <!-- Bottom bar -->
     <div
       class="flex items-center justify-between py-2 border-t border-gray-200 dark:border-gray-800 text-xs text-gray-400"
@@ -157,6 +160,7 @@ const emit = defineEmits<{
 
 const starterKitConfig = {
   link: {
+    openOnClick: true,
     isAllowedUri: (url: string) => {
       // Allow note:// internal links in addition to default protocols
       if (url.startsWith("note://")) return true
@@ -182,6 +186,8 @@ const customExtensions = [
   }),
 ]
 const editorRef = ref<Editor | null>(null)
+const attachmentsPanel = ref<{ refresh: () => void } | null>(null)
+const attachmentsVersion = ref(0)
 
 async function handleFileUpload(file: File, editor: Editor) {
   if (!props.note) return false
@@ -192,12 +198,16 @@ async function handleFileUpload(file: File, editor: Editor) {
       editor.chain().focus().setImage({ src: result.url, alt: result.filename }).run()
     } else {
       // Insert a download link for non-image files
-      const linkMarkdown = `[📎 ${result.filename}](${result.url})`
-      editor.commands.insertContent(linkMarkdown, { contentType: "markdown" })
+      editor.chain().focus().insertContent({
+        type: 'text',
+        text: `📎 ${result.filename}`,
+        marks: [{ type: 'link', attrs: { href: result.url, target: '_blank' } }],
+      }).run()
     }
   } catch (err: any) {
-    toast.add({ title: "Upload failed", description: err?.data?.statusMessage || "Could not upload image", color: "error" })
+    toast.add({ title: "Upload failed", description: err?.data?.statusMessage || "Could not upload file", color: "error" })
   }
+  attachmentsVersion.value++
   return true
 }
 
@@ -528,4 +538,25 @@ function scheduleSave() {
   color: white;
   border-radius: 2px;
 }
+.tiptap a {
+  cursor: pointer;
+}
+.tiptap [data-resize-handle] {
+  width: 12px;
+  height: 12px;
+  background: var(--ui-primary);
+  border: 2px solid white;
+  border-radius: 50%;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.tiptap [data-resize-wrapper]:hover [data-resize-handle],
+.tiptap [data-resize-wrapper][data-resize-state="true"] [data-resize-handle] {
+  opacity: 1;
+}
+.tiptap [data-resize-handle="top-left"] { cursor: nwse-resize; transform: translate(-50%, -50%); }
+.tiptap [data-resize-handle="top-right"] { cursor: nesw-resize; transform: translate(50%, -50%); }
+.tiptap [data-resize-handle="bottom-left"] { cursor: nesw-resize; transform: translate(-50%, 50%); }
+.tiptap [data-resize-handle="bottom-right"] { cursor: nwse-resize; transform: translate(50%, 50%); }
 </style>
