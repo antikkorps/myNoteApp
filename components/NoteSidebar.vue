@@ -26,7 +26,7 @@
     </div>
 
     <div class="flex-1 overflow-y-auto">
-      <FolderTree
+      <ClientOnly><FolderTree
         :folders="folders"
         :active-folder-id="activeFolderId"
         :notes="notes"
@@ -39,7 +39,7 @@
         @move-note="$emit('move-note', $event)"
         @show-library="$emit('show-library')"
         @refresh="$emit('refresh-folders')"
-      />
+      /></ClientOnly>
     </div>
 
     <TagCloud

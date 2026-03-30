@@ -50,7 +50,7 @@
 
 ### Export & Import
 
-- [ ] Export Markdown / JSON
+- [x] Export Markdown / JSON
 - [ ] Import Markdown (migration depuis d'autres apps)
 
 ### Historique & Versions
@@ -87,6 +87,51 @@
 - [ ] Support multilingue (FR / EN)
 - [ ] Détection automatique de la langue du navigateur
 - [ ] Sélecteur de langue dans les settings
+
+### Sécurité & Validation
+
+- [ ] Validation des inputs API avec zod/valibot (tous les endpoints)
+- [ ] Vérification d'email au signup
+- [ ] Confirmation avant suppression définitive (trash)
+
+### Base de données
+
+- [ ] Ajout des index manquants (notes.userId, notes.deletedAt, notes.folderId, folders.userId, attachments.userId)
+- [ ] Foreign key sur folders.parentId → folders.id
+- [ ] Contrainte d'unicité sur (userId, parentId, name) pour les dossiers
+
+### Accessibilité (a11y)
+
+- [ ] Labels et aria-label sur tous les inputs (sidebar search, file picker, tag input...)
+- [ ] Navigation clavier dans l'arbre de dossiers
+- [ ] Rôles ARIA sur les éléments interactifs
+- [ ] Association des messages d'erreur avec les champs (login/signup)
+
+### Qualité de code
+
+- [ ] Supprimer les casts `as any` (useImageUpload, NoteEditor toolbar)
+- [ ] Découper NoteEditor.vue (560+ lignes) en sous-composants
+- [ ] Constantes API centralisées (remplacer les URLs en dur)
+- [ ] Standardiser les réponses API (format uniforme)
+- [ ] Gestion d'erreurs réseau dans index.vue (try/catch sur les fetch)
+
+### Tests
+
+- [ ] Setup vitest
+- [ ] Tests unitaires composables (useImageUpload, useAuth, useFindInNote...)
+- [ ] Tests d'intégration API (CRUD notes, folders, uploads, trash)
+
+### Observabilité
+
+- [ ] Logging serveur (pino ou similaire)
+- [ ] Error tracking (Sentry ou similaire)
+- [ ] Request ID pour le tracing
+
+### Optimisations
+
+- [ ] Génération de thumbnails pour les images uploadées
+- [ ] Pagination des notes (si volume important)
+- [ ] Lazy loading de l'éditeur TipTap
 
 ### Notifications
 
