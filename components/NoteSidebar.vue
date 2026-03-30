@@ -91,4 +91,10 @@ defineEmits<{
   "show-trash": []
   search: [query: string]
 }>()
+
+defineExpose({
+  focusSearch() {
+    searchInputRef.value?.focus()
+  },
+})
 </script>

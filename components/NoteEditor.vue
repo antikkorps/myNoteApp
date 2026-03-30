@@ -65,7 +65,7 @@
           </template>
 
           <!-- Toolbar fixe : blocs + historique -->
-          <div class="flex items-center gap-1">
+          <div class="flex items-center gap-1 sticky top-0 z-10 bg-white dark:bg-gray-900 py-1">
             <UEditorToolbar
               :editor="editor"
               :items="fixedItems"
