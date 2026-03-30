@@ -64,7 +64,7 @@
 
 ### Raccourcis clavier
 
-- [ ] Raccourcis globaux (Ctrl+N nouvelle note, Ctrl+Shift+F recherche...)
+- [x] Raccourcis globaux (Alt+N nouvelle note, Ctrl+Shift+F recherche)
 - [ ] Raccourcis Markdown live dans l'éditeur (#, -, > convertis automatiquement)
 
 ### Éditeur avancé
@@ -81,6 +81,12 @@
 
 - [ ] Service worker + cache offline
 - [ ] Sync queue pour les changements hors-ligne
+
+### Internationalisation (i18n)
+
+- [ ] Support multilingue (FR / EN)
+- [ ] Détection automatique de la langue du navigateur
+- [ ] Sélecteur de langue dans les settings
 
 ### Notifications
 

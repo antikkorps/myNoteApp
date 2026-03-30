@@ -216,7 +216,6 @@ async function deleteNote(id: number) {
       await $fetch(`/api/notes/${id}`, { method: "DELETE" })
       await refresh()
       await refreshTrash()
-      showTrashView()
     }
   }, 5000)
 
@@ -237,6 +236,19 @@ async function deleteNote(id: number) {
           if (!activeNoteId.value) {
             selectNote(noteToDelete.id)
           }
+        },
+      },
+      {
+        label: "Trash",
+        color: "neutral",
+        variant: "ghost",
+        onClick: async () => {
+          cancelled = true
+          clearTimeout(timer)
+          await $fetch(`/api/notes/${id}`, { method: "DELETE" })
+          await refresh()
+          await refreshTrash()
+          showTrashView()
         },
       },
     ],

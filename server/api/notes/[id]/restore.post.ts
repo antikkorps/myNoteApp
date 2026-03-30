@@ -1,6 +1,6 @@
 import { and, eq, isNotNull } from "drizzle-orm"
-import { db, notes } from "../../utils/db"
-import { requireAuth } from "../../utils/requireAuth"
+import { db, notes } from "../../../utils/db"
+import { requireAuth } from "../../../utils/requireAuth"
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)
