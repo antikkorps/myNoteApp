@@ -1,4 +1,4 @@
-import { boolean, integer, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core"
+import { boolean, integer, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core"
 
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
@@ -78,4 +78,20 @@ export const notes = pgTable("notes", {
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+})
+
+export const attachments = pgTable("attachments", {
+  id: serial("id").primaryKey(),
+  noteId: integer("note_id")
+    .notNull()
+    .references(() => notes.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  filename: text("filename").notNull(),
+  storageKey: text("storage_key").notNull(),
+  mimeType: varchar("mime_type", { length: 255 }).notNull(),
+  size: integer("size").notNull(),
+  type: varchar("type", { length: 10 }).notNull(), // 'image' | 'file'
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 })

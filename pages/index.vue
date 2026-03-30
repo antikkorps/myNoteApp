@@ -9,6 +9,7 @@
       leave-to-class="-translate-x-full opacity-0"
     >
       <NoteSidebar
+        ref="sidebarRef"
         v-show="sidebarOpen"
         :notes="displayedNotes"
         :active-note-id="activeNoteId"
@@ -61,6 +62,24 @@ import type { Note, Folder } from "~/types"
 
 const sidebarOpen = inject("sidebarOpen", ref(true))
 const toast = useToast()
+const sidebarRef = ref<{ focusSearch: () => void } | null>(null)
+
+function onGlobalKeydown(e: KeyboardEvent) {
+  // Alt+N — new note
+  if (e.altKey && e.key.toLowerCase() === "n") {
+    e.preventDefault()
+    createNote()
+  }
+  // Ctrl+Shift+F / Cmd+Shift+F — global search
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "f") {
+    e.preventDefault()
+    sidebarOpen.value = true
+    nextTick(() => sidebarRef.value?.focusSearch())
+  }
+}
+
+onMounted(() => window.addEventListener("keydown", onGlobalKeydown))
+onUnmounted(() => window.removeEventListener("keydown", onGlobalKeydown))
 
 const { activeNote, showLibrary, showTrash, folderList } = useActiveNote()
 
@@ -197,7 +216,6 @@ async function deleteNote(id: number) {
       await $fetch(`/api/notes/${id}`, { method: "DELETE" })
       await refresh()
       await refreshTrash()
-      showTrashView()
     }
   }, 5000)
 
@@ -218,6 +236,19 @@ async function deleteNote(id: number) {
           if (!activeNoteId.value) {
             selectNote(noteToDelete.id)
           }
+        },
+      },
+      {
+        label: "Trash",
+        color: "neutral",
+        variant: "ghost",
+        onClick: async () => {
+          cancelled = true
+          clearTimeout(timer)
+          await $fetch(`/api/notes/${id}`, { method: "DELETE" })
+          await refresh()
+          await refreshTrash()
+          showTrashView()
         },
       },
     ],

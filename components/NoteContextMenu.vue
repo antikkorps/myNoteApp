@@ -82,6 +82,30 @@ function deleteNote() {
   actions.value?.delete()
 }
 
+function downloadFile(content: string, filename: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function exportMarkdown() {
+  if (!activeNote.value) return
+  const title = activeNote.value.title || "Untitled"
+  const content = activeNote.value.content || ""
+  downloadFile(content, `${title}.md`, "text/markdown")
+}
+
+function exportJSON() {
+  if (!activeNote.value) return
+  const { id, title, content, tags, folderId, createdAt, updatedAt } = activeNote.value
+  const data = { id, title, content, tags, folderId, createdAt, updatedAt }
+  downloadFile(JSON.stringify(data, null, 2), `${title || "Untitled"}.json`, "application/json")
+}
+
 const moveToItems = computed(() =>
   [
     {
@@ -142,6 +166,22 @@ const menuItems = computed(() => [
       label: "Duplicate",
       icon: "i-lucide-copy",
       onSelect: duplicateNote,
+    },
+    {
+      label: "Export...",
+      icon: "i-lucide-download",
+      children: [
+        {
+          label: "Markdown (.md)",
+          icon: "i-lucide-file-text",
+          onSelect: exportMarkdown,
+        },
+        {
+          label: "JSON (.json)",
+          icon: "i-lucide-file-json",
+          onSelect: exportJSON,
+        },
+      ],
     },
   ],
   [

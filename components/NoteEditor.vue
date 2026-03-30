@@ -35,8 +35,11 @@
           content-type="markdown"
           :starter-kit="starterKitConfig"
           :extensions="customExtensions"
+          :editor-props="imageEditorProps"
+          :image="false"
           class="min-h-50 flex flex-col gap-2"
           @update:model-value="scheduleSave"
+          :on-create="({ editor: e }: any) => { editorRef = e }"
         >
           <FindBar
             v-if="showFindBar && editor"
@@ -62,15 +65,32 @@
           </template>
 
           <!-- Toolbar fixe : blocs + historique -->
-          <UEditorToolbar
-            :editor="editor"
-            :items="fixedItems"
-            layout="fixed"
-            class="overflow-x-auto scrollbar-hide"
-          />
+          <div class="flex items-center gap-1 sticky top-0 z-10 bg-white dark:bg-gray-900 py-1">
+            <UEditorToolbar
+              :editor="editor"
+              :items="fixedItems"
+              layout="fixed"
+              class="overflow-x-auto scrollbar-hide"
+            />
+
+            <EditorImageButton
+              v-if="editor && note"
+              :editor="editor"
+              :note-id="note.id"
+            />
+          </div>
 
           <!-- Toolbar bubble : formatage texte -->
           <UEditorToolbar :editor="editor" :items="bubbleItems" layout="bubble" />
+
+          <!-- Toolbar bubble : actions image (download / delete) -->
+          <UEditorToolbar
+            :editor="editor"
+            :items="imageBubbleItems(editor)"
+            layout="bubble"
+            :should-show="({ editor: e, view }: any) => e.isActive('image') && view.hasFocus()"
+          />
+
           <UEditorDragHandle :editor="editor" />
         </UEditor>
       </ClientOnly>
@@ -78,6 +98,9 @@
 
     <!-- Anchor for the outline teleport (stays fixed, outside the scrollable area) -->
     <div ref="outlineAnchor" class="absolute right-0 top-0 h-full pointer-events-none [&>*]:pointer-events-auto" />
+
+    <!-- Attachments panel -->
+    <NoteAttachments v-if="note" ref="attachmentsPanel" :note-id="note.id" :key="`att-${note.id}-${attachmentsVersion}`" />
 
     <!-- Bottom bar -->
     <div
@@ -105,10 +128,14 @@
 
 <script setup lang="ts">
 import type { EditorToolbarItem } from "@nuxt/ui"
+import type { Editor } from "@tiptap/vue-3"
 import type { Note, Folder, NotePreferences } from "~/types"
 import { SearchHighlight } from "~/utils/searchHighlight"
+import Image from "@tiptap/extension-image"
 
 const { findBarOpen, closeFindBar } = useFindInNote()
+const toast = useToast()
+const { upload, uploading: imageUploading, isImageFile } = useImageUpload()
 
 const props = defineProps<{
   note: Note | null
@@ -133,6 +160,7 @@ const emit = defineEmits<{
 
 const starterKitConfig = {
   link: {
+    openOnClick: true,
     isAllowedUri: (url: string) => {
       // Allow note:// internal links in addition to default protocols
       if (url.startsWith("note://")) return true
@@ -145,7 +173,64 @@ const starterKitConfig = {
 const editorScrollContainer = ref<HTMLElement | null>(null)
 const outlineAnchor = ref<HTMLElement | null>(null)
 const showFindBar = ref(false)
-const customExtensions = [SearchHighlight]
+const customExtensions = [
+  SearchHighlight,
+  Image.configure({
+    resize: {
+      enabled: true,
+      directions: ["top-left", "top-right", "bottom-left", "bottom-right"],
+      minWidth: 100,
+      minHeight: 100,
+      alwaysPreserveAspectRatio: true,
+    },
+  }),
+]
+const editorRef = ref<Editor | null>(null)
+const attachmentsPanel = ref<{ refresh: () => void } | null>(null)
+const attachmentsVersion = ref(0)
+
+async function handleFileUpload(file: File, editor: Editor) {
+  if (!props.note) return false
+
+  try {
+    const result = await upload(file, props.note.id)
+    if (isImageFile(file)) {
+      editor.chain().focus().setImage({ src: result.url, alt: result.filename }).run()
+    } else {
+      // Insert a download link for non-image files
+      editor.chain().focus().insertContent({
+        type: 'text',
+        text: `📎 ${result.filename}`,
+        marks: [{ type: 'link', attrs: { href: result.url, target: '_blank' } }],
+      }).run()
+    }
+  } catch (err: any) {
+    toast.add({ title: "Upload failed", description: err?.data?.statusMessage || "Could not upload file", color: "error" })
+  }
+  attachmentsVersion.value++
+  return true
+}
+
+const imageEditorProps = {
+  handlePaste(_view: any, event: ClipboardEvent) {
+    const files = Array.from(event.clipboardData?.files || [])
+    const file = files[0]
+    if (!file || !editorRef.value) return false
+
+    handleFileUpload(file, editorRef.value as unknown as Editor)
+    return true
+  },
+  handleDrop(_view: any, event: DragEvent, _slice: any, moved: boolean) {
+    if (moved) return false
+
+    const files = Array.from(event.dataTransfer?.files || [])
+    const file = files[0]
+    if (!file || !editorRef.value) return false
+
+    handleFileUpload(file, editorRef.value as unknown as Editor)
+    return true
+  },
+}
 
 watch(findBarOpen, (open) => {
   if (open) {
@@ -334,6 +419,37 @@ const fixedItems: EditorToolbarItem[][] = [
   ],
 ]
 
+// Toolbar bubble : actions image (apparaît au clic sur une image)
+function imageBubbleItems(editor: Editor): EditorToolbarItem[][] {
+  const node = editor.state.doc.nodeAt(editor.state.selection.from)
+
+  return [
+    [
+      {
+        icon: "i-lucide-download",
+        tooltip: { text: "Download" },
+        to: node?.attrs?.src,
+        download: true,
+      } as any,
+    ],
+    [
+      {
+        icon: "i-lucide-trash",
+        tooltip: { text: "Delete" },
+        onClick: () => {
+          const { state } = editor
+          const pos = state.selection.from
+          const selectedNode = state.doc.nodeAt(pos)
+
+          if (selectedNode && selectedNode.type.name === "image") {
+            editor.chain().focus().deleteRange({ from: pos, to: pos + selectedNode.nodeSize }).run()
+          }
+        },
+      } as any,
+    ],
+  ]
+}
+
 // Toolbar bubble : formatage inline (apparaît à la sélection)
 const bubbleItems: EditorToolbarItem[][] = [
   [
@@ -422,4 +538,25 @@ function scheduleSave() {
   color: white;
   border-radius: 2px;
 }
+.tiptap a {
+  cursor: pointer;
+}
+.tiptap [data-resize-handle] {
+  width: 12px;
+  height: 12px;
+  background: var(--ui-primary);
+  border: 2px solid white;
+  border-radius: 50%;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.tiptap [data-resize-wrapper]:hover [data-resize-handle],
+.tiptap [data-resize-wrapper][data-resize-state="true"] [data-resize-handle] {
+  opacity: 1;
+}
+.tiptap [data-resize-handle="top-left"] { cursor: nwse-resize; transform: translate(-50%, -50%); }
+.tiptap [data-resize-handle="top-right"] { cursor: nesw-resize; transform: translate(50%, -50%); }
+.tiptap [data-resize-handle="bottom-left"] { cursor: nesw-resize; transform: translate(-50%, 50%); }
+.tiptap [data-resize-handle="bottom-right"] { cursor: nwse-resize; transform: translate(50%, 50%); }
 </style>
