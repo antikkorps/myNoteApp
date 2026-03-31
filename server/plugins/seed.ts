@@ -27,7 +27,19 @@ export default defineNitroPlugin(async () => {
           password: adminPassword,
         },
       })
+      // Set admin role
+      await db
+        .update(users)
+        .set({ role: "admin" })
+        .where(eq(users.email, adminEmail))
       console.log("Admin user created")
+    } else if (existing[0]!.role !== "admin") {
+      // Ensure existing admin user has admin role
+      await db
+        .update(users)
+        .set({ role: "admin" })
+        .where(eq(users.email, adminEmail))
+      console.log("Admin user role updated")
     } else {
       console.log("Admin user already exists")
     }

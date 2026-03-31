@@ -1,4 +1,4 @@
-import { boolean, integer, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core"
+import { bigint, boolean, integer, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core"
 
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
@@ -6,6 +6,8 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
+  role: text("role").default("user").notNull(),
+  storageUsed: integer("storage_used").default(0).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 })
@@ -94,4 +96,21 @@ export const attachments = pgTable("attachments", {
   size: integer("size").notNull(),
   type: varchar("type", { length: 10 }).notNull(), // 'image' | 'file'
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+})
+
+export const storageQuotas = pgTable("storage_quotas", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" })
+    .unique(),
+  maxBytes: bigint("max_bytes", { mode: "number" }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+})
+
+export const appSettings = pgTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 })

@@ -136,3 +136,47 @@
 ### Notifications
 
 - [ ] Rappels / notifications sur une note à une date donnée
+
+---
+
+## Audit sécurité (2026-03-31)
+
+### CRITICAL
+
+- [x] `.env` commité dans Git — vérifié : déjà dans .gitignore et non tracké
+- [x] `destroy.delete.ts` : vérifié : ownership check déjà présent
+- [x] `uploads/index.post.ts` : ajout vérification que la note appartient au user connecté
+- [x] `uploads/note/[noteId].get.ts` : ajout vérification ownership de la note
+- [ ] Tokens OAuth en clair en DB (table accounts)
+
+### HIGH
+
+- [ ] Pas de validation inputs API (title/content/tags) — DoS possible, ajouter zod
+- [ ] `folders.parentId` sans FK ni vérification userId — boucles cycliques possibles
+- [ ] Pas de rate limiting sur signin/signup — brute force possible
+- [x] Trash cleanup ne supprime pas les fichiers sur disque (`server/tasks/trash/cleanup.ts`)
+- [ ] 6 vulnérabilités npm modérées (esbuild, brace-expansion, yaml via drizzle-kit)
+- [x] Quota stockage par utilisateur — configurable par super admin (quotas granulaires, page admin, app_settings)
+
+### MEDIUM
+
+- [ ] Index DB manquants (notes.userId, notes.deletedAt, notes.folderId, folders.userId, attachments.userId)
+- [ ] Devtools activé en prod (`devtools: { enabled: true }` dans nuxt.config.ts)
+- [ ] Pas de headers de sécurité (CSP, X-Frame-Options, X-Content-Type-Options)
+- [ ] Path traversal potentiel dans `server/utils/storage.ts`
+- [ ] Conversion ID faible : `Number(getRouterParam())` peut retourner NaN
+- [ ] Docker-compose avec password faible en dur
+- [ ] Sessions sans maxAge/timeout configuré
+
+### LOW
+
+- [ ] Tags et preferences stockés en text (pas normalisés)
+- [ ] Pas de validation d'env au démarrage
+- [ ] Pas de logging/monitoring serveur
+
+### Qualité de code (audit)
+
+- [ ] Découper NoteEditor.vue (562 lignes) en sous-composants
+- [ ] Interface `Folder` dupliquée dans plusieurs composants — centraliser
+- [ ] Refactorer FolderTree.vue (263 lignes) et FolderTreeNode.vue (247 lignes)
+- [ ] Refactorer pages/index.vue (293 lignes) — séparer état global et affichage
