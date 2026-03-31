@@ -153,7 +153,7 @@
 
 - [x] Validation inputs API avec zod (title/content/tags/folders) + validateId sur tous les endpoints
 - [ ] `folders.parentId` sans FK ni vérification userId — boucles cycliques possibles
-- [ ] Pas de rate limiting sur signin/signup — brute force possible
+- [x] Rate limiting sur signin/signup (10 tentatives / 15 min par IP)
 - [x] Trash cleanup ne supprime pas les fichiers sur disque (`server/tasks/trash/cleanup.ts`)
 - [ ] 6 vulnérabilités npm modérées (esbuild, brace-expansion, yaml via drizzle-kit)
 - [x] Quota stockage par utilisateur — configurable par super admin (quotas granulaires, page admin, app_settings)
