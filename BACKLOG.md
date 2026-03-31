@@ -161,11 +161,11 @@
 ### MEDIUM
 
 - [x] Index DB manquants (notes(userId,deletedAt), notes(folderId), folders(userId), attachments(userId,noteId))
-- [ ] Devtools activé en prod (`devtools: { enabled: true }` dans nuxt.config.ts)
-- [ ] Pas de headers de sécurité (CSP, X-Frame-Options, X-Content-Type-Options)
+- [x] Devtools conditionnel (`process.env.NODE_ENV === "development"`)
+- [x] Headers de sécurité (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy)
 - [x] Path traversal potentiel dans `server/utils/storage.ts` — resolve + startsWith check
 - [x] Conversion ID faible — remplacé par `validateId()` avec vérif int positif
-- [ ] Docker-compose avec password faible en dur
+- [x] Docker-compose : credentials via variables d'env avec fallback
 - [ ] Sessions sans maxAge/timeout configuré
 
 ### LOW

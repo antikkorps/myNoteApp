@@ -4,9 +4,9 @@ services:
     container_name: noteapp-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: noteapp
-      POSTGRES_PASSWORD: noteapp_password
-      POSTGRES_DB: noteapp
+      POSTGRES_USER: ${POSTGRES_USER:-noteapp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-noteapp_password}
+      POSTGRES_DB: ${POSTGRES_DB:-noteapp}
     ports:
       - "5434:5432"
     volumes:
