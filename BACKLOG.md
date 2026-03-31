@@ -151,7 +151,7 @@
 
 ### HIGH
 
-- [ ] Pas de validation inputs API (title/content/tags) — DoS possible, ajouter zod
+- [x] Validation inputs API avec zod (title/content/tags/folders) + validateId sur tous les endpoints
 - [ ] `folders.parentId` sans FK ni vérification userId — boucles cycliques possibles
 - [ ] Pas de rate limiting sur signin/signup — brute force possible
 - [x] Trash cleanup ne supprime pas les fichiers sur disque (`server/tasks/trash/cleanup.ts`)
@@ -160,11 +160,11 @@
 
 ### MEDIUM
 
-- [ ] Index DB manquants (notes.userId, notes.deletedAt, notes.folderId, folders.userId, attachments.userId)
+- [x] Index DB manquants (notes(userId,deletedAt), notes(folderId), folders(userId), attachments(userId,noteId))
 - [ ] Devtools activé en prod (`devtools: { enabled: true }` dans nuxt.config.ts)
 - [ ] Pas de headers de sécurité (CSP, X-Frame-Options, X-Content-Type-Options)
-- [ ] Path traversal potentiel dans `server/utils/storage.ts`
-- [ ] Conversion ID faible : `Number(getRouterParam())` peut retourner NaN
+- [x] Path traversal potentiel dans `server/utils/storage.ts` — resolve + startsWith check
+- [x] Conversion ID faible — remplacé par `validateId()` avec vérif int positif
 - [ ] Docker-compose avec password faible en dur
 - [ ] Sessions sans maxAge/timeout configuré
 

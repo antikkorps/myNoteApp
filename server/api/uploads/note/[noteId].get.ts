@@ -1,10 +1,11 @@
 import { and, eq } from "drizzle-orm"
 import { db, attachments, notes } from "../../../utils/db"
 import { requireAuth } from "../../../utils/requireAuth"
+import { validateId } from "../../../utils/validation"
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)
-  const noteId = Number(getRouterParam(event, "noteId"))
+  const noteId = validateId(event, "noteId")
 
   // Verify note belongs to user
   const [note] = await db

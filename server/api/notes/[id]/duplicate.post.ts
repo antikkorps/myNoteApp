@@ -1,10 +1,11 @@
 import { and, eq, isNull } from "drizzle-orm"
 import { db, notes } from "../../../utils/db"
 import { requireAuth } from "../../../utils/requireAuth"
+import { validateId } from "../../../utils/validation"
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)
-  const id = Number(getRouterParam(event, "id"))
+  const id = validateId(event)
 
   const [original] = await db
     .select()

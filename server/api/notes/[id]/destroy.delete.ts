@@ -2,10 +2,11 @@ import { and, eq, isNotNull, sql } from "drizzle-orm"
 import { db, notes, attachments, users } from "../../../utils/db"
 import { requireAuth } from "../../../utils/requireAuth"
 import { deleteFile } from "../../../utils/storage"
+import { validateId } from "../../../utils/validation"
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)
-  const id = Number(getRouterParam(event, "id"))
+  const id = validateId(event)
 
   // Get attachments before deleting (cascade will remove DB rows)
   const noteAttachments = await db

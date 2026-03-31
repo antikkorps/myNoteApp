@@ -2,10 +2,11 @@ import { and, eq, sql } from "drizzle-orm"
 import { db, attachments, users } from "../../utils/db"
 import { requireAuth } from "../../utils/requireAuth"
 import { deleteFile } from "../../utils/storage"
+import { validateId } from "../../utils/validation"
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)
-  const id = Number(getRouterParam(event, "id"))
+  const id = validateId(event)
 
   const [attachment] = await db
     .delete(attachments)

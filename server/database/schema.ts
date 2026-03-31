@@ -1,4 +1,4 @@
-import { bigint, boolean, integer, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core"
+import { bigint, boolean, index, integer, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core"
 
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
@@ -65,7 +65,9 @@ export const folders = pgTable("folders", {
   parentId: integer("parent_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-})
+}, (table) => [
+  index("folders_user_id_idx").on(table.userId),
+])
 
 export const notes = pgTable("notes", {
   id: serial("id").primaryKey(),
@@ -80,7 +82,10 @@ export const notes = pgTable("notes", {
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-})
+}, (table) => [
+  index("notes_user_id_deleted_at_idx").on(table.userId, table.deletedAt),
+  index("notes_folder_id_idx").on(table.folderId),
+])
 
 export const attachments = pgTable("attachments", {
   id: serial("id").primaryKey(),
@@ -96,7 +101,10 @@ export const attachments = pgTable("attachments", {
   size: integer("size").notNull(),
   type: varchar("type", { length: 10 }).notNull(), // 'image' | 'file'
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-})
+}, (table) => [
+  index("attachments_user_id_idx").on(table.userId),
+  index("attachments_note_id_idx").on(table.noteId),
+])
 
 export const storageQuotas = pgTable("storage_quotas", {
   id: serial("id").primaryKey(),

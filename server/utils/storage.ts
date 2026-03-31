@@ -1,12 +1,16 @@
-import { join, dirname } from "path"
+import { join, dirname, resolve } from "path"
 import { mkdir, writeFile, readFile, unlink, access } from "fs/promises"
 
 function getUploadDir(): string {
-  return process.env.UPLOAD_DIR || "./storage/uploads"
+  return resolve(process.env.UPLOAD_DIR || "./storage/uploads")
 }
 
 function getFilePath(storageKey: string): string {
-  return join(getUploadDir(), storageKey)
+  const filePath = resolve(getUploadDir(), storageKey)
+  if (!filePath.startsWith(getUploadDir())) {
+    throw new Error("Invalid storage key")
+  }
+  return filePath
 }
 
 export async function uploadFile(storageKey: string, data: Buffer, _contentType: string): Promise<string> {
