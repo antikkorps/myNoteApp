@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm"
 import { db, attachments } from "../../utils/db"
 import { requireAuth } from "../../utils/requireAuth"
 import { readStoredFile } from "../../utils/storage"
+import { validateId } from "../../utils/validation"
 
 const VIEWABLE_TYPES = new Set([
   "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml",
@@ -14,7 +15,7 @@ function isViewable(mimeType: string): boolean {
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)
-  const id = Number(getRouterParam(event, "id"))
+  const id = validateId(event)
 
   const [attachment] = await db
     .select()

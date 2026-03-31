@@ -1,11 +1,12 @@
-import { and, eq } from "drizzle-orm"
-import { db, attachments } from "../../utils/db"
+import { and, eq, sql } from "drizzle-orm"
+import { db, attachments, users } from "../../utils/db"
 import { requireAuth } from "../../utils/requireAuth"
 import { deleteFile } from "../../utils/storage"
+import { validateId } from "../../utils/validation"
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)
-  const id = Number(getRouterParam(event, "id"))
+  const id = validateId(event)
 
   const [attachment] = await db
     .delete(attachments)
@@ -17,6 +18,14 @@ export default defineEventHandler(async (event) => {
   }
 
   await deleteFile(attachment.storageKey)
+
+  // Update denormalized storage usage
+  await db
+    .update(users)
+    .set({
+      storageUsed: sql`GREATEST(${users.storageUsed} - ${attachment.size}, 0)`,
+    })
+    .where(eq(users.id, session.user.id))
 
   return { deleted: true }
 })

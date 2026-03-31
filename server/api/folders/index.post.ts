@@ -1,9 +1,10 @@
 import { db, folders } from "../../utils/db"
 import { requireAuth } from "../../utils/requireAuth"
+import { validateBody, createFolderSchema } from "../../utils/validation"
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)
-  const { name, parentId } = await readBody(event)
+  const { name, parentId } = await validateBody(event, createFolderSchema)
 
   const [folder] = await db
     .insert(folders)

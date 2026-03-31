@@ -1,19 +1,19 @@
 import { and, eq, isNull } from "drizzle-orm"
 import { db, notes } from "../../utils/db"
 import { requireAuth } from "../../utils/requireAuth"
+import { validateBody, validateId, updateNoteSchema } from "../../utils/validation"
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)
-  const id = Number(getRouterParam(event, "id"))
-  const body = await readBody(event)
-  const { title, content, tags, folderId, preferences } = body
+  const id = validateId(event)
+  const body = await validateBody(event, updateNoteSchema)
 
   const updateData: Record<string, unknown> = { updatedAt: new Date() }
-  if (title !== undefined) updateData.title = title
-  if (content !== undefined) updateData.content = content
-  if (tags !== undefined) updateData.tags = tags || ""
-  if ("folderId" in body) updateData.folderId = folderId || null
-  if (preferences !== undefined) updateData.preferences = JSON.stringify(preferences)
+  if (body.title !== undefined) updateData.title = body.title
+  if (body.content !== undefined) updateData.content = body.content
+  if (body.tags !== undefined) updateData.tags = body.tags || ""
+  if (body.folderId !== undefined) updateData.folderId = body.folderId || null
+  if (body.preferences !== undefined) updateData.preferences = JSON.stringify(body.preferences)
 
   const [note] = await db
     .update(notes)

@@ -16,6 +16,7 @@
         session?.data?.user?.email
       }}</span>
       <ClientOnly><NoteContextMenu v-if="activeNote && !showLibrary && !showTrash" /></ClientOnly>
+      <UButton v-if="isAdmin" size="sm" variant="ghost" icon="i-lucide-shield" to="/admin" />
       <UColorModeButton size="sm" variant="ghost" />
       <UButton size="sm" variant="ghost" icon="i-lucide-power" @click="handleSignOut" />
     </div>
@@ -28,6 +29,8 @@ const session = useSession()
 
 const sidebarOpen = inject("sidebarOpen", ref(true))
 const { activeNote, showLibrary, showTrash } = useActiveNote()
+
+const isAdmin = computed(() => session.value.data?.user?.role === "admin")
 
 async function handleSignOut() {
   await signOut()

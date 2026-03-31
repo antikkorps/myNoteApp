@@ -1,10 +1,22 @@
 import { and, eq } from "drizzle-orm"
-import { db, attachments } from "../../../utils/db"
+import { db, attachments, notes } from "../../../utils/db"
 import { requireAuth } from "../../../utils/requireAuth"
+import { validateId } from "../../../utils/validation"
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)
-  const noteId = Number(getRouterParam(event, "noteId"))
+  const noteId = validateId(event, "noteId")
+
+  // Verify note belongs to user
+  const [note] = await db
+    .select({ id: notes.id })
+    .from(notes)
+    .where(and(eq(notes.id, noteId), eq(notes.userId, session.user.id)))
+    .limit(1)
+
+  if (!note) {
+    throw createError({ statusCode: 404, statusMessage: "Note not found" })
+  }
 
   const query = getQuery(event)
   const typeFilter = query.type as string | undefined

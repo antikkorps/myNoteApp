@@ -1,10 +1,10 @@
 import { db, notes } from "../../utils/db"
 import { requireAuth } from "../../utils/requireAuth"
+import { validateBody, createNoteSchema } from "../../utils/validation"
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)
-  const body = await readBody(event)
-  const { title, content, tags, folderId, preferences } = body
+  const { title, content, tags, folderId, preferences } = await validateBody(event, createNoteSchema)
 
   const [note] = await db
     .insert(notes)

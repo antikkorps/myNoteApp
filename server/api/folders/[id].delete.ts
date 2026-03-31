@@ -1,10 +1,11 @@
 import { and, eq } from "drizzle-orm"
 import { db, folders, notes } from "../../utils/db"
 import { requireAuth } from "../../utils/requireAuth"
+import { validateId } from "../../utils/validation"
 
 export default defineEventHandler(async (event) => {
   const session = await requireAuth(event)
-  const id = Number(getRouterParam(event, "id"))
+  const id = validateId(event)
 
   // Détacher les notes du dossier avant suppression
   await db

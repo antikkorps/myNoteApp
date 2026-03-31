@@ -1,7 +1,8 @@
-import { eq } from "drizzle-orm"
-import { db, attachments, notes } from "../../utils/db"
+import { and, eq, sql } from "drizzle-orm"
+import { db, attachments, notes, users } from "../../utils/db"
 import { requireAuth } from "../../utils/requireAuth"
 import { uploadFile, generateStorageKey } from "../../utils/storage"
+import { checkStorageQuota } from "../../utils/storageQuota"
 
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"]
 const ALLOWED_FILE_TYPES = [
@@ -43,16 +44,19 @@ export default defineEventHandler(async (event) => {
   const mimeType = fileField.type || "application/octet-stream"
   const fileSize = fileField.data.length
 
-  // Verify note belongs to user
+  // Verify note exists and belongs to user
   const [note] = await db
     .select({ id: notes.id })
     .from(notes)
-    .where(eq(notes.id, noteId))
+    .where(and(eq(notes.id, noteId), eq(notes.userId, session.user.id)))
     .limit(1)
 
   if (!note) {
     throw createError({ statusCode: 404, statusMessage: "Note not found" })
   }
+
+  // Check storage quota
+  await checkStorageQuota(session.user.id, fileSize)
 
   // Validate MIME type
   const allowedTypes = fileType === "image" ? ALLOWED_IMAGE_TYPES : ALLOWED_FILE_TYPES
@@ -82,6 +86,12 @@ export default defineEventHandler(async (event) => {
       type: fileType,
     })
     .returning()
+
+  // Update denormalized storage usage
+  await db
+    .update(users)
+    .set({ storageUsed: sql`${users.storageUsed} + ${fileSize}` })
+    .where(eq(users.id, session.user.id))
 
   return {
     ...attachment!,

@@ -136,3 +136,47 @@
 ### Notifications
 
 - [ ] Rappels / notifications sur une note à une date donnée
+
+---
+
+## Audit sécurité (2026-03-31)
+
+### CRITICAL
+
+- [x] `.env` commité dans Git — vérifié : déjà dans .gitignore et non tracké
+- [x] `destroy.delete.ts` : vérifié : ownership check déjà présent
+- [x] `uploads/index.post.ts` : ajout vérification que la note appartient au user connecté
+- [x] `uploads/note/[noteId].get.ts` : ajout vérification ownership de la note
+- [ ] Tokens OAuth en clair en DB (table accounts)
+
+### HIGH
+
+- [x] Validation inputs API avec zod (title/content/tags/folders) + validateId sur tous les endpoints
+- [ ] `folders.parentId` sans FK ni vérification userId — boucles cycliques possibles
+- [x] Rate limiting sur signin/signup (10 tentatives / 15 min par IP)
+- [x] Trash cleanup ne supprime pas les fichiers sur disque (`server/tasks/trash/cleanup.ts`)
+- [ ] 6 vulnérabilités npm modérées (esbuild, brace-expansion, yaml via drizzle-kit)
+- [x] Quota stockage par utilisateur — configurable par super admin (quotas granulaires, page admin, app_settings)
+
+### MEDIUM
+
+- [x] Index DB manquants (notes(userId,deletedAt), notes(folderId), folders(userId), attachments(userId,noteId))
+- [x] Devtools conditionnel (`process.env.NODE_ENV === "development"`)
+- [x] Headers de sécurité (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy)
+- [x] Path traversal potentiel dans `server/utils/storage.ts` — resolve + startsWith check
+- [x] Conversion ID faible — remplacé par `validateId()` avec vérif int positif
+- [x] Docker-compose : credentials via variables d'env avec fallback
+- [ ] Sessions sans maxAge/timeout configuré
+
+### LOW
+
+- [ ] Tags et preferences stockés en text (pas normalisés)
+- [ ] Pas de validation d'env au démarrage
+- [ ] Pas de logging/monitoring serveur
+
+### Qualité de code (audit)
+
+- [ ] Découper NoteEditor.vue (562 lignes) en sous-composants
+- [ ] Interface `Folder` dupliquée dans plusieurs composants — centraliser
+- [ ] Refactorer FolderTree.vue (263 lignes) et FolderTreeNode.vue (247 lignes)
+- [ ] Refactorer pages/index.vue (293 lignes) — séparer état global et affichage
