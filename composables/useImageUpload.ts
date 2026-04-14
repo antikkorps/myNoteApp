@@ -1,3 +1,5 @@
+import type { UploadResponse } from "~/types"
+
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"]
 
 export function useImageUpload() {
@@ -7,7 +9,7 @@ export function useImageUpload() {
     return IMAGE_TYPES.includes(file.type)
   }
 
-  async function upload(file: File, noteId: number): Promise<{ id: number; url: string; filename: string; type: string }> {
+  async function upload(file: File, noteId: number): Promise<UploadResponse> {
     const type = isImageFile(file) ? "image" : "file"
     const formData = new FormData()
     formData.append("file", file)
@@ -16,7 +18,7 @@ export function useImageUpload() {
 
     uploading.value = true
     try {
-      return await $fetch("/api/uploads", { method: "POST", body: formData }) as any
+      return await $fetch<UploadResponse>("/api/uploads", { method: "POST", body: formData })
     } finally {
       uploading.value = false
     }

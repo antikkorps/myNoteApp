@@ -16,6 +16,13 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  session: {
+    expiresIn: 60 * 60 * 24 * 7, // 7 jours
+    updateAge: 60 * 60 * 24, // refresh toutes les 24h
+  },
+  account: {
+    encryptOAuthTokens: true,
+  },
   user: {
     additionalFields: {
       role: {

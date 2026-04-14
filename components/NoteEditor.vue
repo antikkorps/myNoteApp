@@ -78,10 +78,20 @@
               :editor="editor"
               :note-id="note.id"
             />
+
+            <EditorTableButton v-if="editor" :editor="editor" />
+
+            <EditorMermaidButton v-if="editor" :editor="editor" />
           </div>
 
           <!-- Toolbar bubble : formatage texte -->
-          <UEditorToolbar :editor="editor" :items="bubbleItems" layout="bubble" />
+          <UEditorToolbar
+            :editor="editor"
+            :items="bubbleItems"
+            layout="bubble"
+            :options="{ placement: 'top' }"
+            :should-show="({ view, state }: any) => view.hasFocus() && !state.selection.empty"
+          />
 
           <!-- Toolbar bubble : actions image (download / delete) -->
           <UEditorToolbar
@@ -89,6 +99,15 @@
             :items="imageBubbleItems(editor)"
             layout="bubble"
             :should-show="({ editor: e, view }: any) => e.isActive('image') && view.hasFocus()"
+          />
+
+          <!-- Toolbar bubble : actions table (curseur seul OU sélection multi-cellules) -->
+          <UEditorToolbar
+            :editor="editor"
+            :items="tableBubbleItems(editor)"
+            layout="bubble"
+            :options="{ placement: 'bottom' }"
+            :should-show="({ editor: e, view, state }: any) => e.isActive('table') && view.hasFocus() && (state.selection.$anchorCell || state.selection.empty)"
           />
 
           <UEditorDragHandle :editor="editor" />
@@ -127,15 +146,18 @@
 </template>
 
 <script setup lang="ts">
-import type { EditorToolbarItem } from "@nuxt/ui"
 import type { Editor } from "@tiptap/vue-3"
+import { fixedItems, imageBubbleItems, tableBubbleItems, bubbleItems } from "~/utils/editorToolbar"
 import type { Note, Folder, NotePreferences } from "~/types"
 import { SearchHighlight } from "~/utils/searchHighlight"
 import Image from "@tiptap/extension-image"
+import { Table } from "@tiptap/extension-table"
+import { TableRow } from "@tiptap/extension-table-row"
+import { TableCell } from "@tiptap/extension-table-cell"
+import { TableHeader } from "@tiptap/extension-table-header"
+import { MermaidCodeBlock } from "~/utils/mermaidCodeBlock"
 
 const { findBarOpen, closeFindBar } = useFindInNote()
-const toast = useToast()
-const { upload, uploading: imageUploading, isImageFile } = useImageUpload()
 
 const props = defineProps<{
   note: Note | null
@@ -158,7 +180,8 @@ const emit = defineEmits<{
   "navigate-note": [id: number]
 }>()
 
-const starterKitConfig = {
+const starterKitConfig: any = {
+  codeBlock: false,
   link: {
     openOnClick: true,
     isAllowedUri: (url: string) => {
@@ -184,53 +207,30 @@ const customExtensions = [
       alwaysPreserveAspectRatio: true,
     },
   }),
+  Table.configure({ resizable: true }),
+  TableRow,
+  TableHeader,
+  TableCell,
+  MermaidCodeBlock,
 ]
 const editorRef = ref<Editor | null>(null)
 const attachmentsPanel = ref<{ refresh: () => void } | null>(null)
 const attachmentsVersion = ref(0)
 
-async function handleFileUpload(file: File, editor: Editor) {
-  if (!props.note) return false
+const noteRef = computed(() => props.note)
+const { editorProps: imageEditorProps } = useEditorFileUpload(
+  noteRef,
+  editorRef,
+  () => { attachmentsVersion.value++ },
+)
 
-  try {
-    const result = await upload(file, props.note.id)
-    if (isImageFile(file)) {
-      editor.chain().focus().setImage({ src: result.url, alt: result.filename }).run()
-    } else {
-      // Insert a download link for non-image files
-      editor.chain().focus().insertContent({
-        type: 'text',
-        text: `📎 ${result.filename}`,
-        marks: [{ type: 'link', attrs: { href: result.url, target: '_blank' } }],
-      }).run()
-    }
-  } catch (err: any) {
-    toast.add({ title: "Upload failed", description: err?.data?.statusMessage || "Could not upload file", color: "error" })
-  }
-  attachmentsVersion.value++
-  return true
-}
-
-const imageEditorProps = {
-  handlePaste(_view: any, event: ClipboardEvent) {
-    const files = Array.from(event.clipboardData?.files || [])
-    const file = files[0]
-    if (!file || !editorRef.value) return false
-
-    handleFileUpload(file, editorRef.value as unknown as Editor)
-    return true
-  },
-  handleDrop(_view: any, event: DragEvent, _slice: any, moved: boolean) {
-    if (moved) return false
-
-    const files = Array.from(event.dataTransfer?.files || [])
-    const file = files[0]
-    if (!file || !editorRef.value) return false
-
-    handleFileUpload(file, editorRef.value as unknown as Editor)
-    return true
-  },
-}
+// Reset selection au changement de note pour éviter que TipTap tente de restaurer
+// un curseur qui tombe sur un tableCell (warning "TextSelection endpoint not pointing into a node with inline content").
+watch(() => props.note?.id, () => {
+  nextTick(() => {
+    editorRef.value?.commands.setTextSelection(0)
+  })
+})
 
 watch(findBarOpen, (open) => {
   if (open) {
@@ -249,282 +249,20 @@ function onFindKeydown(e: KeyboardEvent) {
 function onCloseFindBar() {
   showFindBar.value = false
 }
-const localTitle = ref("")
-const localContent = ref("")
-const localTags = ref<string[]>([])
-const saving = ref(false)
-const lastSaved = ref(false)
-const localFolderId = ref<number | null>(null)
 
-const fixedItems: EditorToolbarItem[][] = [
-  // History controls
-  [
-    {
-      kind: "undo",
-      icon: "i-lucide-undo",
-      tooltip: { text: "Undo" },
-    },
-    {
-      kind: "redo",
-      icon: "i-lucide-redo",
-      tooltip: { text: "Redo" },
-    },
-  ],
-  // Block types
-  [
-    {
-      icon: "i-lucide-heading",
-      tooltip: { text: "Headings" },
-      content: {
-        align: "start",
-      },
-      items: [
-        {
-          kind: "heading",
-          level: 1,
-          icon: "i-lucide-heading-1",
-          label: "Heading 1",
-        },
-        {
-          kind: "heading",
-          level: 2,
-          icon: "i-lucide-heading-2",
-          label: "Heading 2",
-        },
-        {
-          kind: "heading",
-          level: 3,
-          icon: "i-lucide-heading-3",
-          label: "Heading 3",
-        },
-        {
-          kind: "heading",
-          level: 4,
-          icon: "i-lucide-heading-4",
-          label: "Heading 4",
-        },
-      ],
-    },
-    {
-      icon: "i-lucide-list",
-      tooltip: { text: "Lists" },
-      content: {
-        align: "start",
-      },
-      items: [
-        {
-          kind: "bulletList",
-          icon: "i-lucide-list",
-          label: "Bullet List",
-        },
-        {
-          kind: "orderedList",
-          icon: "i-lucide-list-ordered",
-          label: "Ordered List",
-        },
-      ],
-    },
-    {
-      kind: "blockquote",
-      icon: "i-lucide-text-quote",
-      tooltip: { text: "Blockquote" },
-    },
-    {
-      kind: "codeBlock",
-      icon: "i-lucide-square-code",
-      tooltip: { text: "Code Block" },
-    },
-    {
-      kind: "horizontalRule",
-      icon: "i-lucide-separator-horizontal",
-      tooltip: { text: "Horizontal Rule" },
-    },
-  ],
-  // Text formatting
-  [
-    {
-      kind: "mark",
-      mark: "bold",
-      icon: "i-lucide-bold",
-      tooltip: { text: "Bold" },
-    },
-    {
-      kind: "mark",
-      mark: "italic",
-      icon: "i-lucide-italic",
-      tooltip: { text: "Italic" },
-    },
-    {
-      kind: "mark",
-      mark: "underline",
-      icon: "i-lucide-underline",
-      tooltip: { text: "Underline" },
-    },
-    {
-      kind: "mark",
-      mark: "strike",
-      icon: "i-lucide-strikethrough",
-      tooltip: { text: "Strikethrough" },
-    },
-    {
-      kind: "mark",
-      mark: "code",
-      icon: "i-lucide-code",
-      tooltip: { text: "Code" },
-    },
-  ],
-  // Link
-  [
-    {
-      kind: "link",
-      icon: "i-lucide-link",
-      tooltip: { text: "Link" },
-    },
-  ],
-  // Text alignment
-  [
-    {
-      icon: "i-lucide-align-justify",
-      tooltip: { text: "Text Align" },
-      content: {
-        align: "end",
-      },
-      items: [
-        {
-          kind: "textAlign",
-          align: "left",
-          icon: "i-lucide-align-left",
-          label: "Align Left",
-        },
-        {
-          kind: "textAlign",
-          align: "center",
-          icon: "i-lucide-align-center",
-          label: "Align Center",
-        },
-        {
-          kind: "textAlign",
-          align: "right",
-          icon: "i-lucide-align-right",
-          label: "Align Right",
-        },
-        {
-          kind: "textAlign",
-          align: "justify",
-          icon: "i-lucide-align-justify",
-          label: "Align Justify",
-        },
-      ],
-    },
-  ],
-]
-
-// Toolbar bubble : actions image (apparaît au clic sur une image)
-function imageBubbleItems(editor: Editor): EditorToolbarItem[][] {
-  const node = editor.state.doc.nodeAt(editor.state.selection.from)
-
-  return [
-    [
-      {
-        icon: "i-lucide-download",
-        tooltip: { text: "Download" },
-        to: node?.attrs?.src,
-        download: true,
-      } as any,
-    ],
-    [
-      {
-        icon: "i-lucide-trash",
-        tooltip: { text: "Delete" },
-        onClick: () => {
-          const { state } = editor
-          const pos = state.selection.from
-          const selectedNode = state.doc.nodeAt(pos)
-
-          if (selectedNode && selectedNode.type.name === "image") {
-            editor.chain().focus().deleteRange({ from: pos, to: pos + selectedNode.nodeSize }).run()
-          }
-        },
-      } as any,
-    ],
-  ]
-}
-
-// Toolbar bubble : formatage inline (apparaît à la sélection)
-const bubbleItems: EditorToolbarItem[][] = [
-  [
-    { kind: "mark", mark: "bold", icon: "i-lucide-bold", tooltip: { text: "Bold" } },
-    {
-      kind: "mark",
-      mark: "italic",
-      icon: "i-lucide-italic",
-      tooltip: { text: "Italic" },
-    },
-    {
-      kind: "mark",
-      mark: "underline",
-      icon: "i-lucide-underline",
-      tooltip: { text: "Underline" },
-    },
-    {
-      kind: "mark",
-      mark: "strike",
-      icon: "i-lucide-strikethrough",
-      tooltip: { text: "Strike" },
-    },
-    { kind: "mark", mark: "code", icon: "i-lucide-code", tooltip: { text: "Code" } },
-  ],
-  [{ kind: "link", icon: "i-lucide-link", tooltip: { text: "Link" } }],
-]
-
-let saveTimer: ReturnType<typeof setTimeout> | null = null
-
-let isLoadingNote = false
-
-watch(
-  () => props.note?.id,
-  (newId, oldId) => {
-    if (newId !== oldId && props.note) {
-      isLoadingNote = true
-      localTitle.value = props.note.title
-      localContent.value = props.note.content
-      localTags.value = parseTags(props.note.tags)
-      localFolderId.value = props.note.folderId
-      lastSaved.value = false
-      nextTick(() => {
-        isLoadingNote = false
-      })
-    }
-  },
-  { immediate: true },
-)
-
-watch(localContent, () => {
-  if (!isLoadingNote) {
-    scheduleSave()
-  }
-})
+const {
+  localTitle,
+  localContent,
+  localTags,
+  localFolderId,
+  saving,
+  lastSaved,
+  scheduleSave,
+} = useNoteAutosave(noteRef, (payload) => emit("save", payload))
 
 function onFolderChange(id: number | null) {
   localFolderId.value = id
   scheduleSave()
-}
-
-function scheduleSave() {
-  if (saveTimer) clearTimeout(saveTimer)
-  saveTimer = setTimeout(() => {
-    if (props.note) {
-      emit("save", {
-        id: props.note.id,
-        title: localTitle.value,
-        content: localContent.value,
-        tags: serializeTags(localTags.value),
-        folderId: localFolderId.value,
-      })
-      lastSaved.value = true
-      saving.value = false
-    }
-  }, 1000)
 }
 </script>
 
@@ -559,4 +297,57 @@ function scheduleSave() {
 .tiptap [data-resize-handle="top-right"] { cursor: nesw-resize; transform: translate(50%, -50%); }
 .tiptap [data-resize-handle="bottom-left"] { cursor: nesw-resize; transform: translate(-50%, 50%); }
 .tiptap [data-resize-handle="bottom-right"] { cursor: nwse-resize; transform: translate(50%, 50%); }
+
+.tiptap table {
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+  table-layout: fixed;
+  width: 100%;
+  overflow: hidden;
+}
+.tiptap table td,
+.tiptap table th {
+  border: 1px solid var(--ui-border, #e5e7eb);
+  box-sizing: border-box;
+  min-width: 1em;
+  padding: 6px 8px;
+  position: relative;
+  vertical-align: top;
+}
+.tiptap table th {
+  background-color: var(--ui-bg-muted, #f3f4f6);
+  font-weight: 600;
+  text-align: left;
+}
+.dark .tiptap table td,
+.dark .tiptap table th {
+  border-color: #374151;
+}
+.dark .tiptap table th {
+  background-color: #1f2937;
+}
+.tiptap table .selectedCell::after {
+  background: rgba(99, 102, 241, 0.15);
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+.tiptap table .column-resize-handle {
+  background-color: var(--ui-primary, #6366f1);
+  bottom: -2px;
+  pointer-events: none;
+  position: absolute;
+  right: -2px;
+  top: 0;
+  width: 4px;
+}
+.tiptap .tableWrapper {
+  overflow-x: auto;
+  padding: 1rem 0;
+}
+.tiptap.resize-cursor {
+  cursor: col-resize;
+}
 </style>

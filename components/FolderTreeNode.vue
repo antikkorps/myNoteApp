@@ -112,12 +112,7 @@
 
 <script setup lang="ts">
 import { VueDraggable } from "vue-draggable-plus"
-
-interface Folder {
-  id: number
-  name: string
-  parentId: number | null
-}
+import type { Folder } from "~/types"
 
 interface NoteItem {
   id: number
