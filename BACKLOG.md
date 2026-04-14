@@ -71,7 +71,8 @@
 
 - [x] Tableaux (extension TipTap Table) — insertion via toolbar, bubble menu contextuel (add row/col, merge/split filtré via editor.can(), delete), roundtrip markdown OK
 - [ ] Checklists / task lists (extension TipTap TaskList)
-- [ ] Schémas / diagrammes (Mermaid pour code-as-diagram, ou Excalidraw embed pour dessin libre)
+- [x] Diagrammes Mermaid — bloc code-block custom (language=mermaid) avec NodeView Vue : preview SVG, toggle source/preview, templates (flowchart/sequence/class/state/ER/gantt/pie/mindmap), lien doc. Roundtrip markdown via fenced code block.
+- [ ] Schémas libres Excalidraw (dessin libre, complément de Mermaid)
 
 ### Collaboration
 

@@ -80,6 +80,8 @@
             />
 
             <EditorTableButton v-if="editor" :editor="editor" />
+
+            <EditorMermaidButton v-if="editor" :editor="editor" />
           </div>
 
           <!-- Toolbar bubble : formatage texte -->
@@ -153,6 +155,7 @@ import { Table } from "@tiptap/extension-table"
 import { TableRow } from "@tiptap/extension-table-row"
 import { TableCell } from "@tiptap/extension-table-cell"
 import { TableHeader } from "@tiptap/extension-table-header"
+import { MermaidCodeBlock } from "~/utils/mermaidCodeBlock"
 
 const { findBarOpen, closeFindBar } = useFindInNote()
 
@@ -177,7 +180,8 @@ const emit = defineEmits<{
   "navigate-note": [id: number]
 }>()
 
-const starterKitConfig = {
+const starterKitConfig: any = {
+  codeBlock: false,
   link: {
     openOnClick: true,
     isAllowedUri: (url: string) => {
@@ -207,6 +211,7 @@ const customExtensions = [
   TableRow,
   TableHeader,
   TableCell,
+  MermaidCodeBlock,
 ]
 const editorRef = ref<Editor | null>(null)
 const attachmentsPanel = ref<{ refresh: () => void } | null>(null)
