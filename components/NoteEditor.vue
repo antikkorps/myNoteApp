@@ -219,6 +219,14 @@ const { editorProps: imageEditorProps } = useEditorFileUpload(
   () => { attachmentsVersion.value++ },
 )
 
+// Reset selection au changement de note pour éviter que TipTap tente de restaurer
+// un curseur qui tombe sur un tableCell (warning "TextSelection endpoint not pointing into a node with inline content").
+watch(() => props.note?.id, () => {
+  nextTick(() => {
+    editorRef.value?.commands.setTextSelection(0)
+  })
+})
+
 watch(findBarOpen, (open) => {
   if (open) {
     showFindBar.value = true
