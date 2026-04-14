@@ -78,6 +78,8 @@
               :editor="editor"
               :note-id="note.id"
             />
+
+            <EditorTableButton v-if="editor" :editor="editor" />
           </div>
 
           <!-- Toolbar bubble : formatage texte -->
@@ -132,6 +134,10 @@ import { fixedItems, imageBubbleItems, bubbleItems } from "~/utils/editorToolbar
 import type { Note, Folder, NotePreferences } from "~/types"
 import { SearchHighlight } from "~/utils/searchHighlight"
 import Image from "@tiptap/extension-image"
+import { Table } from "@tiptap/extension-table"
+import { TableRow } from "@tiptap/extension-table-row"
+import { TableCell } from "@tiptap/extension-table-cell"
+import { TableHeader } from "@tiptap/extension-table-header"
 
 const { findBarOpen, closeFindBar } = useFindInNote()
 
@@ -182,6 +188,10 @@ const customExtensions = [
       alwaysPreserveAspectRatio: true,
     },
   }),
+  Table.configure({ resizable: true }),
+  TableRow,
+  TableHeader,
+  TableCell,
 ]
 const editorRef = ref<Editor | null>(null)
 const attachmentsPanel = ref<{ refresh: () => void } | null>(null)
@@ -259,4 +269,57 @@ function onFolderChange(id: number | null) {
 .tiptap [data-resize-handle="top-right"] { cursor: nesw-resize; transform: translate(50%, -50%); }
 .tiptap [data-resize-handle="bottom-left"] { cursor: nesw-resize; transform: translate(-50%, 50%); }
 .tiptap [data-resize-handle="bottom-right"] { cursor: nwse-resize; transform: translate(50%, 50%); }
+
+.tiptap table {
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+  table-layout: fixed;
+  width: 100%;
+  overflow: hidden;
+}
+.tiptap table td,
+.tiptap table th {
+  border: 1px solid var(--ui-border, #e5e7eb);
+  box-sizing: border-box;
+  min-width: 1em;
+  padding: 6px 8px;
+  position: relative;
+  vertical-align: top;
+}
+.tiptap table th {
+  background-color: var(--ui-bg-muted, #f3f4f6);
+  font-weight: 600;
+  text-align: left;
+}
+.dark .tiptap table td,
+.dark .tiptap table th {
+  border-color: #374151;
+}
+.dark .tiptap table th {
+  background-color: #1f2937;
+}
+.tiptap table .selectedCell::after {
+  background: rgba(99, 102, 241, 0.15);
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+.tiptap table .column-resize-handle {
+  background-color: var(--ui-primary, #6366f1);
+  bottom: -2px;
+  pointer-events: none;
+  position: absolute;
+  right: -2px;
+  top: 0;
+  width: 4px;
+}
+.tiptap .tableWrapper {
+  overflow-x: auto;
+  padding: 1rem 0;
+}
+.tiptap.resize-cursor {
+  cursor: col-resize;
+}
 </style>

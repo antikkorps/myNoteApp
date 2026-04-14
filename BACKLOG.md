@@ -69,8 +69,9 @@
 
 ### Éditeur avancé
 
-- [ ] Tableaux (extension TipTap Table)
+- [~] Tableaux (extension TipTap Table) — extensions installées + EditorTableButton (insert/add row|col/merge/split/delete). À VÉRIFIER : roundtrip markdown (les tables peuvent ne pas être sérialisées par @tiptap/markdown — ajout potentiel de parseMarkdown/renderMarkdown GFM)
 - [ ] Checklists / task lists (extension TipTap TaskList)
+- [ ] Schémas / diagrammes (Mermaid pour code-as-diagram, ou Excalidraw embed pour dessin libre)
 
 ### Collaboration
 
