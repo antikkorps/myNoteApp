@@ -83,7 +83,13 @@
           </div>
 
           <!-- Toolbar bubble : formatage texte -->
-          <UEditorToolbar :editor="editor" :items="bubbleItems" layout="bubble" />
+          <UEditorToolbar
+            :editor="editor"
+            :items="bubbleItems"
+            layout="bubble"
+            :options="{ placement: 'top' }"
+            :should-show="({ view, state }: any) => view.hasFocus() && !state.selection.empty"
+          />
 
           <!-- Toolbar bubble : actions image (download / delete) -->
           <UEditorToolbar
@@ -91,6 +97,15 @@
             :items="imageBubbleItems(editor)"
             layout="bubble"
             :should-show="({ editor: e, view }: any) => e.isActive('image') && view.hasFocus()"
+          />
+
+          <!-- Toolbar bubble : actions table (curseur seul OU sélection multi-cellules) -->
+          <UEditorToolbar
+            :editor="editor"
+            :items="tableBubbleItems(editor)"
+            layout="bubble"
+            :options="{ placement: 'bottom' }"
+            :should-show="({ editor: e, view, state }: any) => e.isActive('table') && view.hasFocus() && (state.selection.$anchorCell || state.selection.empty)"
           />
 
           <UEditorDragHandle :editor="editor" />
@@ -130,7 +145,7 @@
 
 <script setup lang="ts">
 import type { Editor } from "@tiptap/vue-3"
-import { fixedItems, imageBubbleItems, bubbleItems } from "~/utils/editorToolbar"
+import { fixedItems, imageBubbleItems, tableBubbleItems, bubbleItems } from "~/utils/editorToolbar"
 import type { Note, Folder, NotePreferences } from "~/types"
 import { SearchHighlight } from "~/utils/searchHighlight"
 import Image from "@tiptap/extension-image"

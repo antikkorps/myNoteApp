@@ -164,6 +164,74 @@ export const fixedItems: EditorToolbarItem[][] = [
   ],
 ]
 
+export function tableBubbleItems(editor: Editor): EditorToolbarItem[][] {
+  const can = editor.can()
+  const structure: EditorToolbarItem[] = [
+    {
+      icon: "i-lucide-arrow-up",
+      tooltip: { text: "Add row above" },
+      onClick: () => { editor.chain().focus().addRowBefore().run() },
+    } as EditorToolbarItem,
+    {
+      icon: "i-lucide-arrow-down",
+      tooltip: { text: "Add row below" },
+      onClick: () => { editor.chain().focus().addRowAfter().run() },
+    } as EditorToolbarItem,
+    {
+      icon: "i-lucide-arrow-left",
+      tooltip: { text: "Add column left" },
+      onClick: () => { editor.chain().focus().addColumnBefore().run() },
+    } as EditorToolbarItem,
+    {
+      icon: "i-lucide-arrow-right",
+      tooltip: { text: "Add column right" },
+      onClick: () => { editor.chain().focus().addColumnAfter().run() },
+    } as EditorToolbarItem,
+  ]
+
+  const cellOps: EditorToolbarItem[] = [
+    {
+      icon: "i-lucide-heading",
+      tooltip: { text: "Toggle header row" },
+      onClick: () => { editor.chain().focus().toggleHeaderRow().run() },
+    } as EditorToolbarItem,
+  ]
+  if (can.mergeCells()) {
+    cellOps.push({
+      icon: "i-lucide-merge",
+      tooltip: { text: "Merge cells" },
+      onClick: () => { editor.chain().focus().mergeCells().run() },
+    } as EditorToolbarItem)
+  }
+  if (can.splitCell()) {
+    cellOps.push({
+      icon: "i-lucide-split",
+      tooltip: { text: "Split cell" },
+      onClick: () => { editor.chain().focus().splitCell().run() },
+    } as EditorToolbarItem)
+  }
+
+  const destructive: EditorToolbarItem[] = [
+    {
+      icon: "i-lucide-rows-3",
+      tooltip: { text: "Delete row" },
+      onClick: () => { editor.chain().focus().deleteRow().run() },
+    } as EditorToolbarItem,
+    {
+      icon: "i-lucide-columns-3",
+      tooltip: { text: "Delete column" },
+      onClick: () => { editor.chain().focus().deleteColumn().run() },
+    } as EditorToolbarItem,
+    {
+      icon: "i-lucide-trash",
+      tooltip: { text: "Delete table" },
+      onClick: () => { editor.chain().focus().deleteTable().run() },
+    } as EditorToolbarItem,
+  ]
+
+  return [structure, cellOps, destructive]
+}
+
 export function imageBubbleItems(editor: Editor): EditorToolbarItem[][] {
   const node = editor.state.doc.nodeAt(editor.state.selection.from)
 

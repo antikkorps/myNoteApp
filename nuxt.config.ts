@@ -19,16 +19,29 @@ export default defineNuxtConfig({
     uploadDir: process.env.UPLOAD_DIR || "./storage/uploads",
   },
   vite: {
+    resolve: {
+      dedupe: [
+        "prosemirror-state",
+        "prosemirror-view",
+        "prosemirror-model",
+        "prosemirror-transform",
+        "prosemirror-tables",
+        "@tiptap/pm",
+        "@tiptap/core",
+      ],
+    },
     optimizeDeps: {
       include: [
         "prosemirror-state",
         "prosemirror-view",
         "prosemirror-model",
         "prosemirror-transform",
+        "prosemirror-tables",
         "@tiptap/pm/state",
         "@tiptap/pm/view",
         "@tiptap/pm/model",
         "@tiptap/pm/transform",
+        "@tiptap/pm/tables",
         "@tiptap/core",
         "@tiptap/vue-3",
         "@tiptap/suggestion",
