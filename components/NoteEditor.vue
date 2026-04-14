@@ -134,8 +134,6 @@ import { SearchHighlight } from "~/utils/searchHighlight"
 import Image from "@tiptap/extension-image"
 
 const { findBarOpen, closeFindBar } = useFindInNote()
-const toast = useToast()
-const { upload, uploading: imageUploading, isImageFile } = useImageUpload()
 
 const props = defineProps<{
   note: Note | null
@@ -189,48 +187,12 @@ const editorRef = ref<Editor | null>(null)
 const attachmentsPanel = ref<{ refresh: () => void } | null>(null)
 const attachmentsVersion = ref(0)
 
-async function handleFileUpload(file: File, editor: Editor) {
-  if (!props.note) return false
-
-  try {
-    const result = await upload(file, props.note.id)
-    if (isImageFile(file)) {
-      editor.chain().focus().setImage({ src: result.url, alt: result.filename }).run()
-    } else {
-      // Insert a download link for non-image files
-      editor.chain().focus().insertContent({
-        type: 'text',
-        text: `📎 ${result.filename}`,
-        marks: [{ type: 'link', attrs: { href: result.url, target: '_blank' } }],
-      }).run()
-    }
-  } catch (err: any) {
-    toast.add({ title: "Upload failed", description: err?.data?.statusMessage || "Could not upload file", color: "error" })
-  }
-  attachmentsVersion.value++
-  return true
-}
-
-const imageEditorProps = {
-  handlePaste(_view: any, event: ClipboardEvent) {
-    const files = Array.from(event.clipboardData?.files || [])
-    const file = files[0]
-    if (!file || !editorRef.value) return false
-
-    handleFileUpload(file, editorRef.value as unknown as Editor)
-    return true
-  },
-  handleDrop(_view: any, event: DragEvent, _slice: any, moved: boolean) {
-    if (moved) return false
-
-    const files = Array.from(event.dataTransfer?.files || [])
-    const file = files[0]
-    if (!file || !editorRef.value) return false
-
-    handleFileUpload(file, editorRef.value as unknown as Editor)
-    return true
-  },
-}
+const noteRef = computed(() => props.note)
+const { editorProps: imageEditorProps } = useEditorFileUpload(
+  noteRef,
+  editorRef,
+  () => { attachmentsVersion.value++ },
+)
 
 watch(findBarOpen, (open) => {
   if (open) {
@@ -249,62 +211,20 @@ function onFindKeydown(e: KeyboardEvent) {
 function onCloseFindBar() {
   showFindBar.value = false
 }
-const localTitle = ref("")
-const localContent = ref("")
-const localTags = ref<string[]>([])
-const saving = ref(false)
-const lastSaved = ref(false)
-const localFolderId = ref<number | null>(null)
 
-
-let saveTimer: ReturnType<typeof setTimeout> | null = null
-
-let isLoadingNote = false
-
-watch(
-  () => props.note?.id,
-  (newId, oldId) => {
-    if (newId !== oldId && props.note) {
-      isLoadingNote = true
-      localTitle.value = props.note.title
-      localContent.value = props.note.content
-      localTags.value = parseTags(props.note.tags)
-      localFolderId.value = props.note.folderId
-      lastSaved.value = false
-      nextTick(() => {
-        isLoadingNote = false
-      })
-    }
-  },
-  { immediate: true },
-)
-
-watch(localContent, () => {
-  if (!isLoadingNote) {
-    scheduleSave()
-  }
-})
+const {
+  localTitle,
+  localContent,
+  localTags,
+  localFolderId,
+  saving,
+  lastSaved,
+  scheduleSave,
+} = useNoteAutosave(noteRef, (payload) => emit("save", payload))
 
 function onFolderChange(id: number | null) {
   localFolderId.value = id
   scheduleSave()
-}
-
-function scheduleSave() {
-  if (saveTimer) clearTimeout(saveTimer)
-  saveTimer = setTimeout(() => {
-    if (props.note) {
-      emit("save", {
-        id: props.note.id,
-        title: localTitle.value,
-        content: localContent.value,
-        tags: serializeTags(localTags.value),
-        folderId: localFolderId.value,
-      })
-      lastSaved.value = true
-      saving.value = false
-    }
-  }, 1000)
 }
 </script>
 

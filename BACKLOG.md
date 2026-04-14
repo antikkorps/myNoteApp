@@ -118,8 +118,8 @@
 ### Tests
 
 - [x] Setup vitest (config `@nuxt/test-utils` + happy-dom, script `npm test`)
-- [~] Tests unitaires composables — faits : useActiveNote, useFindInNote, useImageUpload. Reste : useAuth, autres composables
-- [ ] Tests d'intégration API (CRUD notes, folders, uploads, trash)
+- [x] Tests unitaires composables — useActiveNote, useFindInNote, useImageUpload, useAuth
+- [~] Tests serveur — `wouldCreateCycle` (folderCycle), `validateId`/`validateBody`. Reste : tests d'intégration HTTP des endpoints CRUD (nécessite DB de test)
 
 ### Observabilité
 
