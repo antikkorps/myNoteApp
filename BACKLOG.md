@@ -110,15 +110,15 @@
 ### Qualité de code
 
 - [ ] Supprimer les casts `as any` (useImageUpload, NoteEditor toolbar)
-- [ ] Découper NoteEditor.vue (560+ lignes) en sous-composants
+- [~] Découper NoteEditor.vue — toolbar extraite dans `utils/editorToolbar.ts` (-222 lignes). Reste à découper davantage.
 - [ ] Constantes API centralisées (remplacer les URLs en dur)
 - [ ] Standardiser les réponses API (format uniforme)
 - [ ] Gestion d'erreurs réseau dans index.vue (try/catch sur les fetch)
 
 ### Tests
 
-- [ ] Setup vitest
-- [ ] Tests unitaires composables (useImageUpload, useAuth, useFindInNote...)
+- [x] Setup vitest (config `@nuxt/test-utils` + happy-dom, script `npm test`)
+- [~] Tests unitaires composables — faits : useActiveNote, useFindInNote, useImageUpload. Reste : useAuth, autres composables
 - [ ] Tests d'intégration API (CRUD notes, folders, uploads, trash)
 
 ### Observabilité
@@ -147,12 +147,12 @@
 - [x] `destroy.delete.ts` : vérifié : ownership check déjà présent
 - [x] `uploads/index.post.ts` : ajout vérification que la note appartient au user connecté
 - [x] `uploads/note/[noteId].get.ts` : ajout vérification ownership de la note
-- [ ] Tokens OAuth en clair en DB (table accounts)
+- [x] Tokens OAuth en clair en DB — `encryptOAuthTokens: true` dans better-auth
 
 ### HIGH
 
 - [x] Validation inputs API avec zod (title/content/tags/folders) + validateId sur tous les endpoints
-- [ ] `folders.parentId` sans FK ni vérification userId — boucles cycliques possibles
+- [x] `folders.parentId` sans FK ni vérification userId — FK ajoutée (migration 0007, ON DELETE SET NULL) + détection de cycles dans `PUT /api/folders/[id]`
 - [x] Rate limiting sur signin/signup (10 tentatives / 15 min par IP)
 - [x] Trash cleanup ne supprime pas les fichiers sur disque (`server/tasks/trash/cleanup.ts`)
 - [ ] 6 vulnérabilités npm modérées (esbuild, brace-expansion, yaml via drizzle-kit)
@@ -166,7 +166,7 @@
 - [x] Path traversal potentiel dans `server/utils/storage.ts` — resolve + startsWith check
 - [x] Conversion ID faible — remplacé par `validateId()` avec vérif int positif
 - [x] Docker-compose : credentials via variables d'env avec fallback
-- [ ] Sessions sans maxAge/timeout configuré
+- [x] Sessions sans maxAge/timeout configuré — `expiresIn: 7j`, `updateAge: 24h`
 
 ### LOW
 
@@ -176,7 +176,7 @@
 
 ### Qualité de code (audit)
 
-- [ ] Découper NoteEditor.vue (562 lignes) en sous-composants
-- [ ] Interface `Folder` dupliquée dans plusieurs composants — centraliser
+- [~] Découper NoteEditor.vue — toolbar extraite dans `utils/editorToolbar.ts`. Reste à découper davantage (bubble menu image, panneau attachments).
+- [x] Interface `Folder` dupliquée — centralisée (import depuis `types/index.ts` dans FolderBadge, FolderPickerNode, FolderTree, FolderTreeNode, NoteLibrary) + ajout type `UploadResponse`
 - [ ] Refactorer FolderTree.vue (263 lignes) et FolderTreeNode.vue (247 lignes)
 - [ ] Refactorer pages/index.vue (293 lignes) — séparer état global et affichage

@@ -62,20 +62,7 @@
 </template>
 
 <script setup lang="ts">
-interface Note {
-  id: number
-  title: string
-  content: string
-  tags: string | null
-  folderId: number | null
-  updatedAt: string
-}
-
-interface Folder {
-  id: number
-  name: string
-  parentId: number | null
-}
+import type { Note, Folder } from "~/types"
 
 const props = defineProps<{
   notes: Note[]

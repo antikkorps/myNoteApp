@@ -10,16 +10,22 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "devDependencies": {
     "@iconify-json/heroicons": "^1.2.3",
     "@iconify-json/lucide": "^1.2.90",
+    "@nuxt/test-utils": "^4.0.2",
     "@types/node": "^25.2.3",
+    "@vue/test-utils": "^2.4.6",
     "dotenv": "^17.2.4",
     "drizzle-kit": "^0.31.9",
+    "happy-dom": "^20.8.9",
     "nuxt": "^4.3.1",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.4"
   },
   "dependencies": {
     "@nuxt/ui": "^4.4.0",

@@ -1,4 +1,4 @@
-import { bigint, boolean, index, integer, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core"
+import { type AnyPgColumn, bigint, boolean, index, integer, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core"
 
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
@@ -62,7 +62,7 @@ export const folders = pgTable("folders", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
-  parentId: integer("parent_id"),
+  parentId: integer("parent_id").references((): AnyPgColumn => folders.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [

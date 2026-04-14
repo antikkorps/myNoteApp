@@ -26,11 +26,7 @@
 </template>
 
 <script setup lang="ts">
-interface Folder {
-  id: number
-  name: string
-  parentId: number | null
-}
+import type { Folder } from "~/types"
 
 const props = defineProps<{
   folder: Folder

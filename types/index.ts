@@ -25,3 +25,10 @@ export interface Folder {
   createdAt: string
   updatedAt: string
 }
+
+export interface UploadResponse {
+  id: number
+  url: string
+  filename: string
+  type: string
+}
